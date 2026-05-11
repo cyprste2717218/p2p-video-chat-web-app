@@ -1,0 +1,14 @@
+{
+  "name": "video-chat-application",
+  "version": "1.0.0",
+  "description": "Video chat application",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npm run run-static-web-server && npm run run-web-socket-api",
+    "run-static-web-server": "node web-server/server.js",
+    "run-web-socket-api": "node web-socket-api/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

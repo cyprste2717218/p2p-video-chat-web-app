@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Video Chat Application</title>
+	<script src="lib/client.js" defer></script>
+</head>
+
+<body>
+	<h1>Video Chat Application</h1>
+
+	<div class="flexChild" id="camera-container">
+		<div class="camera-box">
+			<video id="received_video" autoplay></video>
+			<video id="local_video" autoplay muted></video>
+			<button id="hangup-button" disabled>Hang Up</button>
+		</div>
+	</div>
+	<div>
+		<span>Current Call ID:</span><span id="current-call-id-display"></span>
+	</div>
+	<br>
+	<input type="text" id="username" placeholder="Enter your username">
+	<div>
+		<button id="create-call-button">Create Call</button>
+	</div>
+	<div>
+		<input type="text" id="connect-to-call" placeholder="Enter the call ID">
+		<button id="connect-button">Connect</button>
+	</div>
+	<div>
+		<h2>Chat</h2>
+		<div id="chat-messages"></div>
+		<input type="text" id="message" placeholder="Enter your message">
+		<button id="send-message">Send</button>
+	</div>
+</body>
+
+
+</html>

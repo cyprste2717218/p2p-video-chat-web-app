@@ -1,0 +1,304 @@
+openapi: 3.2.0
+info:
+  title: Web Socket API
+  description: A simple API to manage a web socket connection
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+
+paths:
+  /user:
+    get:
+      summary: Get user details
+      operationId: getUser
+      responses:
+        '200':
+          description: A user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+       
+  /user/all:
+    get:
+      summary: Get all users details
+      operationId: getAllUsers
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    
+  /signup:
+    post:
+      summary: Register a new user with username, email and password
+      operationId: signupUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    success:
+                      type: boolean
+                    user:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          format: int64
+                        username:
+                          type: string
+                        email:
+                          type: string
+                          format: email
+                    token:
+                      type: string
+                      format: jwt
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        property:
+                          type: string
+                        message:
+                          type: string
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  error:
+                    type: string
+                  reqBody:
+                    type: string
+  
+  /login:
+    post:
+      summary: Login an existing user with either user ID or email address alongside password
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                em
+
+      responses:
+        '200':
+          description: JWT issued for succesful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    format: jwt
+        '400':
+          description: Invalid credentials for login attempt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    username:
+                      type: string
+
+        '500':
+          description: Server error during login request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                 data:
+                    username:
+                      type: string
+
+  /logout:
+
+  /call/create:
+    post:
+      summary: Create a ws server for a new call and return the created call ID in UUID v4 format
+      operationId: createCall
+      requestBody:
+        required: true
+        content: 
+          application/json:
+            schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  token:
+                    type: string
+                    format: jwt
+      responses: 
+        '201':
+          description: The ID of the new call
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                      success: 
+                        type: boolean
+                      callId:
+                        type: string
+                        format: uuid
+
+        '500':
+          description: Server error during creation of ws server for new call
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                        success: 
+                          type: boolean
+                        error:
+                          type: string
+
+        '429':
+          description: Concurrent video call sessions limit reached
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                        success: 
+                          type: boolean
+                        error:
+                          type: string
+
+  /call/join/{callId}:
+    put:
+      summary: Makes user join existing call
+      operationId: joinCall
+      requestBody:
+          required: true
+          content: 
+            application/json:
+              schema:
+                  type: object
+                  properties:
+                    username:
+                      type: string
+                    token:
+                      type: string
+                      format: jwt
+      responses:
+    
+  /call/leave/{callId}:
+    put:
+      summary: Makes user disconnect from existing call
+      operationId: leaveCall
+      requestBody:
+        required: true
+        content: 
+          application/json:
+            schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    format: jwt
+      
+      responses:
+
+schemas:
+
+  SignUpRequest:
+    type: object
+    properties:
+      username:
+        type: string
+      email:
+        type: string
+        format: email
+      password:
+        type: string
+        format: password
+
+  User:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      username:
+        type: string
+      email:
+        type: string
+        format: email
+      password:
+        type: string
+        format: password
+      createdAt:
+        type: string
+        format: date-time
+      updatedAt:
+        type: string
+        format: date-time
+  
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
