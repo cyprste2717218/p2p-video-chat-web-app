@@ -2,13 +2,58 @@ document.getElementById("hangup-button").addEventListener("click", hangUpCall);
 document.getElementById("connect-button").addEventListener("click", connectToCall);
 document.getElementById("create-call-button").addEventListener("click", createCall);
 
+async function establishWebSocketServerConn(callURL, operation) {
+	const websocket = new WebSocket(callURL);
+
+	const messagesToSend = [];
+
+	switch (operation) {
+		case 'joinCall':
+			const msg1 = {
+				"type": "chatMessage",
+				"data": `${enteredUsername} joined the call`
+			};
+
+			const msg2 = {
+				"type": "newParticipantOnCall",
+				"data": enteredUsername
+			};
+
+			messagesToSend.push(msg1, msg2);
+
+			break;
+		case 'createCall':
+
+
+			break;
+	}
+
+	websocket.addEventListener("open", () => {
+
+		// send needed messages to ws server after participant has succesfully created, joined or left a call
+		messagesToSend.map((message) => {
+			websocket.send(JSON.stringify(message));
+		});
+
+	});
+
+	// respond to messages from ws server
+	websocket.addEventListener("message", (e) => {
+		const message = JSON.parse(e.data);
+	})
+
+
+}
+
 function sendToServer(msg) {
 	const msgJSON = JSON.stringify(msg);
 
 	connection.send(msgJSON);
 }
 
+
 async function connectToCall() {
+
 	const enteredUsername = document.getElementById("username").value;
 	const callId = document.getElementById("connect-to-call").value;
 
@@ -37,15 +82,10 @@ async function connectToCall() {
 				throw new Error("Create new call failed");
 			}
 
-			const { callURL, otherCallParticipants } = data;
+			const { callURL } = data;
 
 			// establish connection to websocket server created
-			const websocket = new WebSocket(callURL);
-
-			websocket.addEventListener("open", () => {
-				websocket.send(`${enteredUsername} CONNECTED`);
-
-			});
+			await establishWebSocketServerConn(callURL, 'joinCall');
 
 			// display currrent call ID connected to in UI
 			const currentCallIdDisplay = document.getElementById("current-call-id-display");
@@ -53,6 +93,21 @@ async function connectToCall() {
 
 			// reset join call button to default text after connection established
 			joinCallButton.textContent = "Join Call";
+
+			// display current participants on call joined
+			const container = document.getElementById('my-container');
+
+			otherCallParticipants.map((participantName) => {
+				const newPara = document.createElement('p');
+
+				newPara.textContent = participantName;
+
+				container.appendChild(newPara);
+			})
+
+
+
+
 		}
 
 	} catch (err) {
@@ -104,12 +159,7 @@ async function createCall() {
 			createCallButton.textContent = "Create Call";
 
 			// establish connection to websocket server created
-			const websocket = new WebSocket(callURL);
-
-			websocket.addEventListener("open", () => {
-				websocket.send(`${enteredUsername} CONNECTED`);
-
-			});
+			await establishWebSocketServerConn();
 
 
 		}

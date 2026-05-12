@@ -5,7 +5,7 @@ const Call = defineCall(sequelize);
 
 const Ajv = require('ajv');
 const addFormats = require("ajv-formats");
-const { createWebSocketsServer } = require('./utils/ws-server');
+const { createWebSocketsServer, activeSessions } = require('./utils/ws-server');
 const ajv = new Ajv();
 addFormats(ajv);
 
@@ -37,9 +37,6 @@ const validateJoinCallParams = ajv.compile(joinCallParamsSchema);
 const validateJoinCallBody = ajv.compile(joinCallBodySchema);
 
 const validateCreateCall = ajv.compile(createCallSchema)
-
-
-const activeSessions = new Map();
 
 
 exports.createCall = async (req, res) => {

@@ -44,3 +44,4 @@ function createPeerConnection() {
 		handleICEGatheringStateChangeEvent;
 	myPeerConnection.onsignalingstatechange = handleSignalingStateChangeEvent;
 }
+
