@@ -2,55 +2,18 @@ document.getElementById("hangup-button").addEventListener("click", hangUpCall);
 document.getElementById("connect-button").addEventListener("click", connectToCall);
 document.getElementById("create-call-button").addEventListener("click", createCall);
 
-async function establishWebSocketServerConn(callURL, operation) {
-	const websocket = new WebSocket(callURL);
-
-	const messagesToSend = [];
-
-	switch (operation) {
-		case 'joinCall':
-			const msg1 = {
-				"type": "chatMessage",
-				"data": `${enteredUsername} joined the call`
-			};
-
-			const msg2 = {
-				"type": "newParticipantOnCall",
-				"data": enteredUsername
-			};
-
-			messagesToSend.push(msg1, msg2);
-
-			break;
-		case 'createCall':
+let websocket;
 
 
-			break;
-	}
-
-	websocket.addEventListener("open", () => {
-
-		// send needed messages to ws server after participant has succesfully created, joined or left a call
-		messagesToSend.map((message) => {
-			websocket.send(JSON.stringify(message));
-		});
-
-	});
-
-	// respond to messages from ws server
-	websocket.addEventListener("message", (e) => {
-		const message = JSON.parse(e.data);
-	})
 
 
+
+
+async function establishWebSocketServerConn(callURL) {
+
+	// should have some error handling here around establishing ws connection
+	websocket = new WebSocket(callURL);
 }
-
-function sendToServer(msg) {
-	const msgJSON = JSON.stringify(msg);
-
-	connection.send(msgJSON);
-}
-
 
 async function connectToCall() {
 
@@ -85,7 +48,7 @@ async function connectToCall() {
 			const { callURL } = data;
 
 			// establish connection to websocket server created
-			await establishWebSocketServerConn(callURL, 'joinCall');
+			await establishWebSocketServerConn(callURL);
 
 			// display currrent call ID connected to in UI
 			const currentCallIdDisplay = document.getElementById("current-call-id-display");
@@ -94,16 +57,7 @@ async function connectToCall() {
 			// reset join call button to default text after connection established
 			joinCallButton.textContent = "Join Call";
 
-			// display current participants on call joined
-			const container = document.getElementById('my-container');
 
-			otherCallParticipants.map((participantName) => {
-				const newPara = document.createElement('p');
-
-				newPara.textContent = participantName;
-
-				container.appendChild(newPara);
-			})
 
 
 
@@ -159,8 +113,75 @@ async function createCall() {
 			createCallButton.textContent = "Create Call";
 
 			// establish connection to websocket server created
-			await establishWebSocketServerConn();
+			await establishWebSocketServerConn(callURL);
 
+			if (websocket) {
+				websocket.addEventListener("open", () => {
+
+					console.log("Established websocket server connection succesfully");
+					const messagesToSend = [];
+					const msg1 = {
+						"type": "newParticipantOnCall",
+						"data": { username: enteredUsername, callId: callId }
+					};
+					messagesToSend.push(msg1);
+
+
+					messagesToSend.map((message) => {
+						websocket.send(JSON.stringify(message));
+					});
+
+				});
+
+
+				// respond to messages from ws server
+				websocket.addEventListener("message", (e) => {
+					console.log("Received new message:", e.data);
+					const message = JSON.parse(e.data);
+
+					const { type, data } = message;
+
+					switch (type) {
+						case 'receivedNewParticipantNotif':
+						case 'chatMessage':
+
+							const chatMessage = data.message;
+
+
+							// update DOM with message on new chat participant joining and/or new chat message
+							const chatMessagesContainer = document.getElementById('chat-messages');
+							const newPara = document.createElement('p');
+
+							newPara.textContent = chatMessage;
+							chatMessagesContainer.appendChild(newPara);
+
+							break;
+						case 'responseCurrentCallParticipants':
+							const otherCallParticipants = data.participants;
+							const caller = document.getElementById("username").value;
+
+							otherCallParticipants.forEach(participant => {
+								const createdOffer = sendOffer(caller, participant);
+								websocket.send(JSON.stringify(createdOffer))
+							});
+
+							// Update DOM to display current participants on call being joined
+							const currentParticipantsContainer = document.getElementById('my-container');
+
+							otherCallParticipants.map((participantName) => {
+								const newPara = document.createElement('p');
+
+								newPara.textContent = participantName;
+
+								currentParticipantsContainer.appendChild(newPara);
+							})
+
+							break;
+					}
+				})
+
+
+			}
 
 		}
 

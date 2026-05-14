@@ -56,7 +56,8 @@ exports.createCall = async (req, res) => {
 
 		const callConfig = {
 			wsURL: uri,
-			participants: [username]
+			participants: [username],
+			pendingParticipants: []
 		}
 
 		// create call ID and store alongside created websockets server URL in memory
@@ -91,18 +92,17 @@ exports.joinCall = async (req, res) => {
 			return res.status(404).json({ success: false, error: 'Call ID not present' });
 		}
 
-		// adding new participant to in-memory config for current call
+		// add pending participant (has to join WebSocket server) to in-memory config for current call
 		const { username } = req.body;
 
-		const allCallParticipants = retrievedCallConfig.participants;
-		allCallParticipants.push(username);
 
-		const otherCallParticipants = allCallParticipants.filter(participant => participant !== username);
+		const pendingParticipants = retrievedCallConfig.pendingParticipants;
+		pendingParticipants.push(username);
 
 		// retrieving the URL of the web socket server
 		const retrievedCallURL = retrievedCallConfig.wsURL;
 
-		return res.status(201).json({ success: true, data: { callURL: retrievedCallURL, otherCallParticipants: otherCallParticipants } });
+		return res.status(201).json({ success: true, data: { callURL: retrievedCallURL } });
 
 
 	} catch (err) {

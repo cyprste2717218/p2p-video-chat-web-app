@@ -3,18 +3,19 @@ var WebSocketServer = require('ws').Server;
 const uuid = require('uuid');
 let wss;
 
-
-
 function broadcast(message) {
 	wss.clients.forEach((client) => {
+
 		// Check if the connection is fully open
 		if (client.readyState === 1) {
+			console.log("Client is ready")
 			client.send(message);
 		}
 	});
 }
 
-export const activeSessions = new Map();
+const activeSessions = new Map();
+exports.activeSessions = activeSessions;
 
 exports.createWebSocketsServer = async () => {
 
@@ -24,7 +25,7 @@ exports.createWebSocketsServer = async () => {
 	wss = new WebSocketServer({ port: 9090 });
 
 	wss.on('connection', function (connection) {
-		console.log("user connected");
+
 
 		//when server gets a message from a connected user 
 		connection.on('message', function (message) {
@@ -36,20 +37,46 @@ exports.createWebSocketsServer = async () => {
 			switch (type) {
 				case 'newParticipantOnCall':
 
+					const { username, callId } = data;
+
+					console.log(`User ${username} connected to WebSocket server`);
 					const newParticipantNotif = JSON.stringify(
 						{
 							type: 'receivedNewParticipantNotif',
-							data: data
+							data: { message: `${data.username} joined chat` }
 						}
 					)
 
 					broadcast(newParticipantNotif);
+
+					// Returning names of current call participants to new participant to establish connections
+					const joinedCall = activeSessions.get(callId)
+					const { participants, pendingParticipants } = joinedCall;
+					if (participants.length !== 1) {
+
+						// filter out username from list of participants to connect to 
+						const otherCallParticipants = participants.filter((participant) => participant !== username);
+
+						const currentCallParticipantsMsg = JSON.stringify(
+							{
+								type: 'responseCurrentCallParticipants',
+								data: { participants: otherCallParticipants }
+							}
+						)
+
+						connection.send(currentCallParticipantsMsg)
+
+						// TODO: handle update in-memory config of pending and current call participants
+						/* pendingParticipants.remove(username)
+						participants.push(username) */
+					}
+
 					break;
 				case 'chatMessage':
 					const newChatMessage = JSON.stringify(
 						{
 							type: 'receivedNewChatMessage',
-							data: data
+							data: { message: data.message }
 						}
 					)
 
@@ -64,14 +91,17 @@ exports.createWebSocketsServer = async () => {
 							data: allParticipantsNamesArr
 						}
 					)
+					break;
+				case 'offer':
+					// TODO: Implement
+					const { caller, recipient, offer } = data;
+					console.log(`User ${caller} sent offer to ${recipient}. Offer is ${offer}`)
+					break;
 
 
 			}
-
-			console.log("Got message from a user:", message);
 		});
 
-		connection.send("Hello from server");
 	});
 
 	// constructing URI of WS server created
