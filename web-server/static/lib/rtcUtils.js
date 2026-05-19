@@ -6,8 +6,13 @@ const mediaConstraints = {
 };
 
 // Send SDP offer message from caller to recipient over signalling server
-export async function sendOffer(caller, recipient) {
-	async function createOffer() {
+export function sendOffer(caller, recipient) {
+	function createOffer() {
+
+		function handleGetUserMediaError() {
+
+		}
+
 		const peerConnection = createPeerConnection();
 
 		if (!localMedia) {
@@ -22,21 +27,23 @@ export async function sendOffer(caller, recipient) {
 			})
 			.catch(handleGetUserMediaError);
 
-		peerConnection.createOffer()
-			.then(() => {
-				peerConnection.setLocalDescription()
+		peerConnection
+			.createOffer()
+			.then((offer) => {
+				peerConnection.setLocalDescription(offer)
 			})
 
 		return peerConnection;
 	}
 
-	const createdOffer = await createOffer();
+	const createdOffer = createOffer();
 
 	const message = {
 		type: 'offer',
 		data: { offer: createdOffer, recipient: recipient, caller: caller }
 	}
 
+	console.log("This is the offer:", message);
 	return message;
 }
 
@@ -58,9 +65,36 @@ export async function getLocalMedia() {
 	}
 }
 
-
-
 function createPeerConnection() {
+
+	function handleICECandidateEvent() {
+
+	}
+
+	function handleTrackEvent() {
+
+	}
+
+	function handleNegotiationNeededEvent() {
+
+	}
+
+	function handleRemoveTrackEvent() {
+
+	}
+
+	function handleICEConnectionStateChangeEvent() {
+
+	}
+
+	function handleICEGatheringStateChangeEvent() {
+
+	}
+
+	function handleSignalingStateChangeEvent() {
+
+	}
+
 	const myPeerConnection = new RTCPeerConnection({
 		iceServers: [
 			{
@@ -81,4 +115,3 @@ function createPeerConnection() {
 
 	return myPeerConnection;
 }
-

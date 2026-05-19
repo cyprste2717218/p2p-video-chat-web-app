@@ -5,13 +5,27 @@ let wss;
 
 function broadcast(message) {
 	wss.clients.forEach((client) => {
-
 		// Check if the connection is fully open
 		if (client.readyState === 1) {
-			console.log("Client is ready")
 			client.send(message);
 		}
 	});
+}
+
+function sendMessageToParticipant(targetParticipant, message) {
+	try {
+		const participant = Array.from(wss.clients).find(client => client.username === targetParticipant);
+
+		if (!(participant && participant.readyState === 1)) {
+			throw new Error("Unable to find participant or participant ws connection not open");
+		}
+		participant.send(JSON.stringify(message));
+
+	} catch (err) {
+		console.error("Error occurred sending message to websocket client:", err);
+	}
+
+
 }
 
 const activeSessions = new Map();
@@ -57,8 +71,6 @@ exports.createWebSocketsServer = async () => {
 	const callId = uuid.v4();
 
 	//creating a websocket server at random port 
-
-
 	const portNum = setRandomPort();
 	console.log("Port Number:", portNum);
 
@@ -80,6 +92,9 @@ exports.createWebSocketsServer = async () => {
 					case 'newParticipantOnCall':
 
 						const { username, callId } = data;
+						// setting new username property on connection (websocket client) object directly for targeting specific messages
+						connection.username = username;
+
 
 						console.log(`User ${username} connected to WebSocket server`);
 						const newParticipantNotif = JSON.stringify(
@@ -92,12 +107,16 @@ exports.createWebSocketsServer = async () => {
 						broadcast(newParticipantNotif);
 
 						// Returning names of current call participants to new participant to establish connections
-						const joinedCall = activeSessions.get(callId)
+						const joinedCall = activeSessions.get(callId);
+						console.log("the other participants on the call:", joinedCall);
 						const { participants, pendingParticipants } = joinedCall;
-						if (participants.length !== 1) {
+
+						const totalParticipants = participants.length + pendingParticipants.length;
+						if (totalParticipants !== 1) {
 
 							// filter out username from list of participants to connect to 
 							const otherCallParticipants = participants.filter((participant) => participant !== username);
+
 
 							const currentCallParticipantsMsg = JSON.stringify(
 								{
@@ -137,8 +156,24 @@ exports.createWebSocketsServer = async () => {
 					case 'offer':
 						// TODO: Implement
 						const { caller, recipient, offer } = data;
-						console.log(`User ${caller} sent offer to ${recipient}. Offer is ${offer}`)
+						console.log(`User ${caller} sent offer to ${recipient}`);
+
+						// prepare message format to return to intended recipient
+						const offerMessageToReceipient = {
+							type: 'offer',
+							data: {
+								caller: caller,
+								recipient: recipient,
+								offer: offer
+							}
+						}
+
+						sendMessageToParticipant(recipient, offerMessageToReceipient);
+
+
 						break;
+					default:
+						console.log("message of unrecognised type sent:", type);
 
 
 				}
