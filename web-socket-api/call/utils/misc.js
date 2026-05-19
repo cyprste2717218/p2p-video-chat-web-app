@@ -1,6 +1,19 @@
 let wss;
 exports.wss = wss;
 
+exports.constructURI = () => {
+
+	// constructing URI of WS server created
+	const addressInfo = wss.address();
+
+	const host = addressInfo.address === '::' ? 'localhost' : addressInfo.address;
+	const port = addressInfo.port;
+
+	const uri = `ws://${host}:${port}`;
+
+	return uri;
+}
+
 exports.broadcast = (message) => {
 	wss.clients.forEach((client) => {
 		// Check if the connection is fully open

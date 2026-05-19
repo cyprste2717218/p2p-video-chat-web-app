@@ -1,7 +1,7 @@
 //require our websocket library 
 var WebSocketServer = require('ws').Server;
 const uuid = require('uuid');
-const { wss, handleOffer, handleNewCallParticipantMsg, broadcast } = require('./misc');
+const { wss, handleOffer, handleNewCallParticipantMsg, broadcast, constructURI } = require('./misc');
 
 const activeSessions = new Map();
 exports.activeSessions = activeSessions;
@@ -94,16 +94,9 @@ exports.createWebSocketsServer = async () => {
 
 		});
 
-		// constructing URI of WS server created
-		const addressInfo = wss.address();
-
-		const host = addressInfo.address === '::' ? 'localhost' : addressInfo.address;
-		const port = addressInfo.port;
-
-		const uri = `ws://${host}:${port}`;
-
-
+		const uri = constructURI();
 		return { callId, uri };
+
 	} catch (err) {
 		throw new Error("Error creating WebSockets Server:", err);
 	}
