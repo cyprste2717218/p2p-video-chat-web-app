@@ -1,22 +1,26 @@
+let localMedia;
+
 const mediaConstraints = {
 	audio: true, // We want an audio track
 	video: true, // And we want a video track
 };
 
-function sendOffer(caller, recipient) {
-	function createOffer() {
+// Send SDP offer message from caller to recipient over signalling server
+export async function sendOffer(caller, recipient) {
+	async function createOffer() {
 		const peerConnection = createPeerConnection();
 
-		navigator.mediaDevices
-			.getUserMedia(mediaConstraints)
+		if (!localMedia) {
+			throw new Error("No local media currently captured");
+		}
+
+		localMedia
 			.then((localStream) => {
-				document.getElementById("local_video").srcObject = localStream;
 				localStream
 					.getTracks()
 					.forEach((track) => peerConnection.addTrack(track, localStream));
 			})
 			.catch(handleGetUserMediaError);
-
 
 		peerConnection.createOffer()
 			.then(() => {
@@ -26,7 +30,7 @@ function sendOffer(caller, recipient) {
 		return peerConnection;
 	}
 
-	const createdOffer = createOffer();
+	const createdOffer = await createOffer();
 
 	const message = {
 		type: 'offer',
@@ -36,7 +40,23 @@ function sendOffer(caller, recipient) {
 	return message;
 }
 
+// Retrieve and display video from local device on webpage
+export async function getLocalMedia() {
+	try {
 
+		if (localMedia) {
+			throw new Error("Already capturing local media");
+		}
+
+		localMedia = navigator.mediaDevices
+			.getUserMedia(mediaConstraints)
+			.then((localStream) => {
+				document.getElementById("local_video").srcObject = localStream;
+			});
+	} catch (err) {
+		console.error("Error retrieving local media (video):", err);
+	}
+}
 
 
 

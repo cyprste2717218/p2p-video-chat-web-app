@@ -1,13 +1,10 @@
+import { getLocalMedia } from "./rtcUtils.js";
+
 document.getElementById("hangup-button").addEventListener("click", hangUpCall);
 document.getElementById("connect-button").addEventListener("click", connectToCall);
 document.getElementById("create-call-button").addEventListener("click", createCall);
 
 let websocket;
-
-
-
-
-
 
 async function establishWebSocketServerConn(callURL) {
 
@@ -24,7 +21,7 @@ async function connectToCall() {
 	joinCallButton.textContent = "Joining Call...";
 
 	try {
-		const result = await fetch(`http://localhost:3000/call/join/${callId}`, {
+		const result = await fetch(`http://192.168.0.60:3000/call/join/${callId}`, {
 			method: "PUT",
 			body: JSON.stringify({
 				username: enteredUsername
@@ -82,7 +79,7 @@ async function createCall() {
 	createCallButton.textContent = "Creating Call...";
 
 	try {
-		const result = await fetch("http://localhost:3000/call/create", {
+		const result = await fetch("http://192.168.0.60:3000/call/create", {
 			method: "POST",
 			body: JSON.stringify({
 				username: enteredUsername
@@ -112,6 +109,9 @@ async function createCall() {
 
 			createCallButton.textContent = "Create Call";
 
+			// fetch and display local video 
+			await getLocalMedia();
+
 			// establish connection to websocket server created
 			await establishWebSocketServerConn(callURL);
 
@@ -130,6 +130,7 @@ async function createCall() {
 					messagesToSend.map((message) => {
 						websocket.send(JSON.stringify(message));
 					});
+
 
 				});
 

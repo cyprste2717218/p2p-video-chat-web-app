@@ -42,6 +42,7 @@ http
 		file.stream.pipe(res);
 		console.log(`${req.method} ${req.url} ${statusCode}`);
 	})
-	.listen(PORT);
+	.listen(PORT, () => {
+		console.log(`Server running at http://localhost:${PORT}/`);
+	});
 
-console.log(`Server running at http://127.0.0.1:${PORT}/`);
