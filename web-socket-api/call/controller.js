@@ -51,8 +51,27 @@ exports.createCall = async (req, res) => {
 
 		const { username } = req.body;
 
-		// create new websockets server for call
-		const { callId, uri } = await createWebSocketsServer();
+		const wsServerInfo = { callId: "", uri: "" };
+
+		// Handling creating new websockets server for call
+		try {
+			const { callId, uri } = await createWebSocketsServer();
+			wsServerInfo.callId = callId;
+			wsServerInfo.uri = uri;
+
+		} catch (err) {
+			console.error("Error during creation of WebSocket server:", err);
+			throw new Error("An error occured in our systems, please try again");
+		}
+
+		// checking details present for created websockets server before storing to memory
+		if (!(wsServerInfo.callId || wsServerInfo.uri)) {
+			console.error("No value stored for callId or uri fields in wsServerInfo");
+			throw new Error("An error occured in our systems, please try again")
+		}
+
+		const uri = wsServerInfo.uri;
+		const callId = wsServerInfo.callId;
 
 		const callConfig = {
 			wsURL: uri,
