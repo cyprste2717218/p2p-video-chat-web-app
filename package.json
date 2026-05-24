@@ -2,7 +2,7 @@
   "name": "video-chat-application",
   "version": "1.0.0",
   "description": "Video chat application",
-  "main": "index.js",
+  "main": "other.js",
   "scripts": {
     "run-video-chat-frontend": "cd web-server && node server.js",
     "run-signalling-api": "cd web-socket-api && node app.js",
