@@ -5,4 +5,4 @@ const { check } = require('../common/middlewares/isAuthenticated.js');
 router.get('/', check, UserController.getUser);
 router.get('/all', check, UserController.getAllUsers);
 
-module.exports = router;
+module.exports = router; 
