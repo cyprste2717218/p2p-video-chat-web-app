@@ -1,4 +1,5 @@
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const sequelize = require('./common/database');
 
 
@@ -14,12 +15,14 @@ Call.hasMany(User, { foreignKey: 'email', as: 'calls' });
 const express = require('express');
 const app = express();
 
+app.use(cookieParser());
 app.use(cors({
 	origin: '*',
 	methods: ['GET', 'POST', 'PUT', 'DELETE'],
 	allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
 
 sequelize.sync();
 

@@ -5,9 +5,14 @@ exports.check = (req, res, next) => {
 	if (!authHeader)
 		return res.status(401).json({ error: 'No authorization header provided' });
 
-	const [type, token] = authHeader.split(' ');
-	if (type !== 'Bearer')
-		return res.status(401).json({ error: 'Invalid authorization format' });
+	const [type, tokenFromHeader] = authHeader.split(' ');
+	const tokenFromCookie = req.cookies?.access_token;
+
+	const token = scheme === 'Bearer' && tokenFromHeader ? tokenFromHeader : tokenFromCookie;
+
+
+	if (!token)
+		return res.status(401).json({ success: false, data: { message: 'No token provided' } });
 
 	try {
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
