@@ -24,8 +24,8 @@ const validate = ajv.compile(schema);
 const hashPassword = (password) =>
 	bcrypt.hash(password, 10);
 
-const generateAccessToken = (username) =>
-	jwt.sign({ username }, 'your-secret-key', { expiresIn: '72h' });
+const generateAccessToken = (payload) =>
+	jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '15m' });
 
 exports.register = async (req, res) => {
 	try {
@@ -39,7 +39,9 @@ exports.register = async (req, res) => {
 			email,
 			password: hashedPassword
 		});
-		const accessToken = generateAccessToken(username);
+
+		const payload = { username: user.username, email: user.email };
+		const accessToken = generateAccessToken(payload);
 
 		res.status(201).json({
 			success: true,
@@ -49,7 +51,8 @@ exports.register = async (req, res) => {
 			token: accessToken
 		});
 	} catch (err) {
-		res.status(500).json({ success: false, error: err.message, reqBody: String(req.body) });
+		console.error(err);
+		res.status(500).json({ success: false, data: { message: 'Server error' } });
 	}
 };
 
@@ -57,10 +60,22 @@ exports.login = async (req, res) => {
 	try {
 		const { email, password } = req.body;
 		const user = await User.findByPk(email);
+		if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
+		const isMatch = await bcrypt.compare(password, user.password);
+		if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+
+		const payload = { username: user.username, email: user.email };
+		const accessToken = generateAccessToken(payload);
+
+		res.status(200).json({
+			success: true,
+			data: { token: accessToken }
+		});
 
 	} catch (err) {
-
+		console.error(err);
+		res.status(500).json({ success: false, data: { message: 'Server error' } });
 	}
 
 }
