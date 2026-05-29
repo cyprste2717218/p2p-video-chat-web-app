@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const sequelize = require('../common/database');
 const defineUser = require('../common/models/User');
@@ -25,8 +24,8 @@ const validate = ajv.compile(schema);
 const hashPassword = (password) =>
 	bcrypt.hash(password, 10);
 
-const generateAccessToken = (username, userId) =>
-	jwt.sign({ username, userId }, 'your-secret-key', { expiresIn: '72h' });
+const generateAccessToken = (username) =>
+	jwt.sign({ username }, 'your-secret-key', { expiresIn: '72h' });
 
 exports.register = async (req, res) => {
 	try {
@@ -40,11 +39,13 @@ exports.register = async (req, res) => {
 			email,
 			password: hashedPassword
 		});
-		const accessToken = generateAccessToken(username, user.id);
+		const accessToken = generateAccessToken(username);
 
 		res.status(201).json({
 			success: true,
-			user: { id: user.id, username: user.username, email: user.email },
+			data: {
+				message: "Succesful sign up"
+			},
 			token: accessToken
 		});
 	} catch (err) {
@@ -53,7 +54,14 @@ exports.register = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
+	try {
+		const { email, password } = req.body;
+		const user = await User.findByPk(email);
 
+
+	} catch (err) {
+
+	}
 
 }
 

@@ -8,8 +8,8 @@ const User = defineUser(sequelize);
 const defineCall = require('./common/models/Call');
 const Call = defineCall(sequelize);
 
-User.hasMany(Call, { foreignKey: 'userId', as: 'calls' });
-Call.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Call.hasMany(User, { foreignKey: 'email', as: 'calls' });
+
 
 const express = require('express');
 const app = express();
