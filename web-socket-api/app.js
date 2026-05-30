@@ -9,11 +9,11 @@ const User = defineUser(sequelize);
 const defineCall = require('./common/models/Call');
 const Call = defineCall(sequelize);
 
-const defineResetToken = require('./common/models/ResetToken');
-const ResetToken = defineResetToken(sequelize);
+const defineRefreshToken = require('./common/models/RefreshToken');
+const RefreshToken = defineRefreshToken(sequelize);
 
 Call.hasMany(User, { foreignKey: 'email', as: 'calls' });
-User.hasOne(ResetToken, { foreignKey: 'tokenHash', as: 'user' })
+User.hasOne(RefreshToken, { foreignKey: 'tokenHash', as: 'user' })
 
 
 const express = require('express');
