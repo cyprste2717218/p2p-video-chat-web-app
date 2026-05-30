@@ -102,7 +102,27 @@ exports.login = async (req, res) => {
 
 }
 
-exports.logout = async (req, res) => { }
+exports.logout = async (req, res) => {
+	try {
+		const token = req.cookies?.refresh_token;
+		if (token) {
+			const tokenHash = hashToken(token);
+			const doc = await RefreshToken.findOne({ tokenHash });
+			if (doc && !doc.revokedAt) {
+				doc.revokedAt = new Date();
+				await doc.save();
+			}
+		}
+		res.clearCookie('refresh_token', { path: '/refresh' });
+		res.json({
+			success: true, data: { message: 'Logged out succesfully' }
+		});
+	} catch (err) {
+		res.status(500).json({
+			success: false, data: { message: 'Server error' }
+		});
+	}
+}
 
 exports.refresh = async (req, res) => {
 	try {
