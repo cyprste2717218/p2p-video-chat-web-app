@@ -1,5 +1,12 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const {
+	createJti,
+	signAccessToken,
+	signRefreshToken,
+	persistRefreshToken,
+	setRefreshCookie
+} = require('../common/middlewares/tokens');
 const sequelize = require('../common/database');
 const defineUser = require('../common/models/User');
 const User = defineUser(sequelize);
@@ -24,9 +31,6 @@ const validate = ajv.compile(schema);
 const hashPassword = (password) =>
 	bcrypt.hash(password, 10);
 
-const generateAccessToken = (payload) =>
-	jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '15m' });
-
 exports.register = async (req, res) => {
 	try {
 		if (!validate(req.body)) {
@@ -41,7 +45,20 @@ exports.register = async (req, res) => {
 		});
 
 		const payload = { username: user.username, email: user.email };
-		const accessToken = generateAccessToken(payload);
+		const accessToken = signAccessToken(payload);
+
+		const jti = createJti();
+		const refreshToken = signRefreshToken(user, jti);
+
+		await persistRefreshToken({
+			user,
+			refreshToken,
+			jti,
+			ip: req.ip,
+			userAgent: req.headers['user-agent'] || ''
+		});
+
+		setRefreshCookie(res, refreshToken);
 
 		res.status(201).json({
 			success: true,
