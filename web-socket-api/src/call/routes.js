@@ -4,6 +4,7 @@ const { check } = require('../common/middlewares/IsAuthenticated');
 
 router.post('/create', check, CallController.createCall);
 router.put('/:callID/join', check, CallController.joinCall);
-router.put('/:callID/leave', check, CallController.leaveCall);
+router.delete('/:callID/leave', check, CallController.leaveCall);
+router.post('/:callID/messages', check, CallController.sendMessage);
 
 module.exports = router;

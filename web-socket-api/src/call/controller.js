@@ -139,3 +139,7 @@ exports.leaveCall = async (req, res) => {
 
 	}
 };
+
+exports.sendMessage = async (req, res) => {
+
+}
