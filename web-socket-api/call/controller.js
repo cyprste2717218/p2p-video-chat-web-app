@@ -11,9 +11,9 @@ addFormats(ajv);
 
 const joinCallParamsSchema = {
 	type: 'object',
-	required: ['callId'],
+	required: ['callID'],
 	properties: {
-		callId: { type: 'string', format: 'uuid' }
+		callID: { type: 'string', format: 'uuid' }
 	}
 };
 
@@ -51,12 +51,12 @@ exports.createCall = async (req, res) => {
 
 		const { username } = req.body;
 
-		const wsServerInfo = { callId: "", uri: "" };
+		const wsServerInfo = { callID: "", uri: "" };
 
 		// Handling creating new websockets server for call
 		try {
-			const { callId, uri } = await createWebSocketsServer();
-			wsServerInfo.callId = callId;
+			const { callID, uri } = await createWebSocketsServer();
+			wsServerInfo.callID = callID;
 			wsServerInfo.uri = uri;
 
 		} catch (err) {
@@ -65,13 +65,13 @@ exports.createCall = async (req, res) => {
 		}
 
 		// checking details present for created websockets server before storing to memory
-		if (!(wsServerInfo.callId || wsServerInfo.uri)) {
-			console.error("No value stored for callId or uri fields in wsServerInfo");
+		if (!(wsServerInfo.callID || wsServerInfo.uri)) {
+			console.error("No value stored for callID or uri fields in wsServerInfo");
 			throw new Error("An error occured in our systems, please try again")
 		}
 
 		const uri = wsServerInfo.uri;
-		const callId = wsServerInfo.callId;
+		const callID = wsServerInfo.callID;
 
 		const callConfig = {
 			wsURL: uri,
@@ -80,9 +80,9 @@ exports.createCall = async (req, res) => {
 		}
 
 		// create call ID and store alongside created websockets server URL in memory
-		activeSessions.set(callId, callConfig);
+		activeSessions.set(callID, callConfig);
 
-		res.status(201).json({ success: true, data: { callId: callId, callURL: uri } });
+		res.status(201).json({ success: true, data: { callID: callID, callURL: uri } });
 
 
 	} catch (err) {
@@ -106,7 +106,7 @@ exports.joinCall = async (req, res) => {
 		}
 
 		// check if call id exists
-		const retrievedCallConfig = await activeSessions.get(req.params.callId);
+		const retrievedCallConfig = await activeSessions.get(req.params.callID);
 		if (!retrievedCallConfig) {
 			return res.status(404).json({ success: false, error: 'Call ID not present' });
 		}

@@ -15,13 +15,13 @@ async function establishWebSocketServerConn(callURL) {
 async function connectToCall() {
 
 	const enteredUsername = document.getElementById("username").value;
-	const callId = document.getElementById("connect-to-call").value;
+	const callID = document.getElementById("connect-to-call").value;
 
 	const joinCallButton = document.getElementById("connect-button");
 	joinCallButton.textContent = "Joining Call...";
 
 	try {
-		const result = await fetch(`http://192.168.0.60:3000/call/join/${callId}`, {
+		const result = await fetch(`http://localhost:3000/call/${callID}/join`, {
 			method: "PUT",
 			body: JSON.stringify({
 				username: enteredUsername
@@ -51,8 +51,8 @@ async function connectToCall() {
 			await establishWebSocketServerConn(callURL);
 
 			// display currrent call ID connected to in UI
-			const currentCallIdDisplay = document.getElementById("current-call-id-display");
-			currentCallIdDisplay.textContent = callId;
+			const currentcallIDDisplay = document.getElementById("current-call-id-display");
+			currentcallIDDisplay.textContent = callID;
 
 			// reset join call button to default text after connection established
 			joinCallButton.textContent = "Join Call";
@@ -64,7 +64,7 @@ async function connectToCall() {
 					const messagesToSend = [];
 					const msg1 = {
 						"type": "newParticipantOnCall",
-						"data": { username: enteredUsername, callId: callId }
+						"data": { username: enteredUsername, callID: callID }
 					};
 					messagesToSend.push(msg1);
 
@@ -181,10 +181,10 @@ async function createCall() {
 				throw new Error("Create new call failed");
 			}
 
-			const { callId, callURL } = data;
+			const { callID, callURL } = data;
 
-			const currentCallIdDisplay = document.getElementById("current-call-id-display");
-			currentCallIdDisplay.textContent = callId;
+			const currentcallIDDisplay = document.getElementById("current-call-id-display");
+			currentcallIDDisplay.textContent = callID;
 
 			createCallButton.textContent = "Create Call";
 
@@ -201,7 +201,7 @@ async function createCall() {
 					const messagesToSend = [];
 					const msg1 = {
 						"type": "newParticipantOnCall",
-						"data": { username: enteredUsername, callId: callId }
+						"data": { username: enteredUsername, callID: callID }
 					};
 					messagesToSend.push(msg1);
 
