@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const RefreshToken = require('../models/RefreshToken');
+const sequelize = require('../database');
+const defineRefreshToken = require('../models/RefreshToken');
+const RefreshToken = defineRefreshToken(sequelize);
 
 const ACCESS_TTL = '15m';
 const REFRESH_TTL_SEC = 60 * 60 * 24 * 7; // 7 days
@@ -15,7 +17,7 @@ function createJti() {
 }
 
 function signAccessToken(user) {
-	const payload = { id: user.username, email: user.email };
+	const payload = { username: user.username, email: user.email };
 	return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: ACCESS_TTL });
 }
 
@@ -28,7 +30,7 @@ function signRefreshToken(user, jti) {
 async function persistRefreshToken({ user, refreshToken, jti, ip, userAgent }) {
 	const tokenHash = hashToken(refreshToken);
 	const expiresAt = new Date(Date.now() + REFRESH_TTL_SEC * 1000);
-	await RefreshToken.create({ user: user.email, tokenHash, jti, expiresAt, ip, userAgent });
+	await RefreshToken.create({ linkedUser: user.email, tokenHash, jti, expiresAt, ip, userAgent });
 }
 
 function setRefreshCookie(res, refreshToken) {

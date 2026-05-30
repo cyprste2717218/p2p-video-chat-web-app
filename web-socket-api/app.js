@@ -12,9 +12,8 @@ const Call = defineCall(sequelize);
 const defineRefreshToken = require('./common/models/RefreshToken');
 const RefreshToken = defineRefreshToken(sequelize);
 
-Call.hasMany(User, { foreignKey: 'email', as: 'calls' });
-User.hasOne(RefreshToken, { foreignKey: 'tokenHash', as: 'user' })
-
+Call.Users = Call.hasMany(User);
+User.RefreshToken = User.hasOne(RefreshToken)
 
 const express = require('express');
 const app = express();

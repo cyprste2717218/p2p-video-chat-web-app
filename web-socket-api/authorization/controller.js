@@ -39,10 +39,10 @@ const hashPassword = (password) =>
 exports.register = async (req, res) => {
 	try {
 		if (!validate(req.body)) {
-			return res.status(400).json({ error: 'Invalid input', details: validate.errors });
+			return res.status(400).json({ success: false, data: { message: 'Invalid input', details: validate.errors } });
 		}
 		const { username, email, password } = req.body;
-		const hashedPassword = hashPassword(password);
+		const hashedPassword = await hashPassword(password);
 		const user = await User.create({
 			username,
 			email,
@@ -88,7 +88,7 @@ exports.login = async (req, res) => {
 		if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
 		const payload = { username: user.username, email: user.email };
-		const accessToken = generateAccessToken(payload);
+		const accessToken = signAccessToken(payload);
 
 		res.status(200).json({
 			success: true,

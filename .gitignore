@@ -1,3 +1,4 @@
 web-socket-api/node_modules
 web-socket-api/storage/data.db
+web-socket-api/.env
 node_modules
