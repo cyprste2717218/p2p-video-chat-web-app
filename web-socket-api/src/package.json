@@ -24,9 +24,5 @@
     "sqlite3": "^6.0.1",
     "uuid": "^14.0.0",
     "ws": "^8.20.0"
-  },
-  "devDependencies": {
-    "jest": "^30.4.2",
-    "json-server": "^1.0.0-beta.15"
   }
 }
