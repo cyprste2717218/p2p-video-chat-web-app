@@ -5,11 +5,16 @@ const {
 	signAccessToken,
 	signRefreshToken,
 	persistRefreshToken,
-	setRefreshCookie
+	setRefreshCookie,
+	rotateRefreshToken
 } = require('../common/middlewares/tokens');
+
 const sequelize = require('../common/database');
 const defineUser = require('../common/models/User');
 const User = defineUser(sequelize);
+
+const defineRefreshToken = require('../common/models/RefreshToken');
+const RefreshToken = defineRefreshToken(sequelize);
 
 const Ajv = require('ajv');
 const addFormats = require("ajv-formats")
@@ -98,3 +103,35 @@ exports.login = async (req, res) => {
 }
 
 exports.logout = async (req, res) => { }
+
+exports.refresh = async (req, res) => {
+	try {
+		const token = req.cookies?.refresh_token;
+		if (!token) return res.status(401).json({ message: 'No refresh token' });
+
+		let decoded;
+		try {
+			decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+		} catch (err) {
+			return res.status(401).json({ message: 'Invalid or expired refresh token' });
+		}
+
+		const tokenHash = hashToken(token);
+		const doc = await RefreshToken.findOne({ tokenHash, jti: decoded.jti }).populate('user');
+
+		if (!doc) {
+			return res.status(401).json({ message: 'Refresh token not recognized' });
+		}
+		if (doc.revokedAt) {
+			return res.status(401).json({ message: 'Refresh token revoked' });
+		}
+		if (doc.expiresAt < new Date()) {
+			return res.status(401).json({ message: 'Refresh token expired' });
+		}
+
+		const result = await rotateRefreshToken(doc, doc.user, req, res);
+		return res.json({ accessToken: result.accessToken });
+	} catch (err) {
+		res.status(500).json({ message: 'Server error' });
+	}
+}

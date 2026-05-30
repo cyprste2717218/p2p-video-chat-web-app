@@ -20,7 +20,7 @@ function signAccessToken(user) {
 }
 
 function signRefreshToken(user, jti) {
-	const payload = { id: user._id.toString(), jti };
+	const payload = { email: user.email, jti };
 	const token = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TTL_SEC });
 	return token;
 }
