@@ -150,8 +150,8 @@ exports.refresh = async (req, res) => {
 		}
 
 		const result = await rotateRefreshToken(doc, doc.user, req, res);
-		return res.json({ accessToken: result.accessToken });
+		return res.json({ success: true, data: { accessToken: result.accessToken } });
 	} catch (err) {
-		res.status(500).json({ message: 'Server error' });
+		res.status(500).json({ success: false, data: { message: 'Server error' } });
 	}
 }
