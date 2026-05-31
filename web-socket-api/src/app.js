@@ -32,8 +32,8 @@ sequelize.sync();
 const authRoutes = require('./authorization/routes');
 app.use('/', authRoutes);
 
-const userRoutes = require('./users/routes');
-app.use('/user', userRoutes);
+const callRoutes = require('./call/routes');
+app.use('/call', callRoutes);
 
 
 const PORT = process.env.PORT || 3000;
