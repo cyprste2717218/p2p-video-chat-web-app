@@ -1,10 +1,145 @@
 import { getLocalMedia, sendOffer } from "./rtcUtils.js";
 
-document.getElementById("hangup-button").addEventListener("click", hangUpCall);
-document.getElementById("connect-button").addEventListener("click", connectToCall);
-document.getElementById("create-call-button").addEventListener("click", createCall);
+const connectToCallButton = document.getElementById("connect-button");
+connectToCallButton.addEventListener("click", connectToCall);
+
+const createCallButton = document.getElementById("create-call-button");
+createCallButton.addEventListener("click", createCall);
+
+const hangUpButton = document.getElementById("hangup-button");
+hangUpButton.addEventListener("click", hangUpCall);
+
+const registerButton = document.getElementById("register-button");
+registerButton.addEventListener("click", register);
+
+const loginButton = document.getElementById("login-button");
+loginButton.addEventListener("click", login);
+
+const logoutButton = document.getElementById("logout-button");
+logoutButton.addEventListener("click", logout);
+
+const usernameInput = document.getElementById("username");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+
 
 let websocket;
+
+async function register() {
+
+	try {
+
+		registerButton.textContent = "Registering...";
+		const result = await fetch(`http://localhost:3000/signup`, {
+			method: "POST",
+			body: JSON.stringify({
+				username: usernameInput.value,
+				email: emailInput.value,
+				password: passwordInput.value
+			}),
+			headers: {
+				"Content-type": "application/json; charset=UTF-8"
+			}
+		});
+
+		if (result.ok) {
+			const dataBody = await result.json();
+
+			console.log("result", dataBody);
+			const { success, data } = dataBody;
+
+			if (!success) {
+				alert("Signup failed");
+				throw new Error("Signup failed");
+			}
+
+			connectToCallButton.disabled = false;
+			createCallButton.disabled = false;
+			registerButton.textContent = "Register";
+
+			alert("Succesful sign up!");
+		}
+
+	} catch (err) {
+		registerButton.textContent = "Register";
+		console.error("An error occurred:", err);
+	}
+}
+
+async function login() {
+	try {
+
+		loginButton.textContent = "Logging in...";
+		const result = await fetch(`http://localhost:3000/login`, {
+			method: "POST",
+			body: JSON.stringify({
+				username: usernameInput.value,
+				email: emailInput.value,
+				password: passwordInput.value
+			}),
+			headers: {
+				"Content-type": "application/json; charset=UTF-8"
+			}
+		});
+
+		if (result.ok) {
+			const dataBody = await result.json();
+
+			console.log("result", dataBody);
+			const { success, data } = dataBody;
+
+			if (!success) {
+				alert("Login failed");
+				throw new Error("Login failed");
+			}
+
+			connectToCallButton.disabled = false;
+			createCallButton.disabled = false;
+			loginButton.textContent = "Login";
+
+			alert("Succesful login!");
+		}
+
+	} catch (err) {
+		loginButton.textContent = "Login";
+		console.error("An error occurred:", err);
+	}
+}
+
+async function logout() {
+	try {
+
+		logoutButton.textContent = "Logging out...";
+		const result = await fetch(`http://localhost:3000/logout`, {
+			method: "POST",
+			headers: {
+				"Content-type": "application/json; charset=UTF-8"
+			}
+		});
+
+		if (result.ok) {
+			const dataBody = await result.json();
+
+			console.log("result", dataBody);
+			const { success, data } = dataBody;
+
+			if (!success) {
+				alert("Logout failed");
+				throw new Error("Logout failed");
+			}
+
+			joinCallButton.disabled = false;
+			createCallButton.disabled = false;
+			logoutButton.textContent = "Logout";
+
+			alert("Logged out!");
+		}
+
+	} catch (err) {
+		logoutButton.textContent = "Logout";
+		console.error("An error occurred:", err);
+	}
+}
 
 async function establishWebSocketServerConn(callURL) {
 
@@ -14,7 +149,7 @@ async function establishWebSocketServerConn(callURL) {
 
 async function connectToCall() {
 
-	const enteredUsername = document.getElementById("username").value;
+	const enteredUsername = usernameInput.value;
 	const callID = document.getElementById("connect-to-call").value;
 
 	const joinCallButton = document.getElementById("connect-button");

@@ -22,20 +22,35 @@
 		<span>Current Call ID:</span><span id="current-call-id-display"></span>
 	</div>
 	<br>
-	<input type="text" id="username" placeholder="Enter your username">
 	<div>
-		<button id="create-call-button">Create Call</button>
+		<p>Register/login</p>
+		<input type="email" id="email" placeholder="Enter your email">
+		<input type="text" id="username" placeholder="Enter your username">
+		<input type="password" id="password" placeholder="Enter your password">
+		<button id="register-button">Register</button>
+		<button id="login-button">Login</button>
+		<button id="logout-button">Logout</button>
+
 	</div>
+
 	<div>
-		<input type="text" id="connect-to-call" placeholder="Enter the call ID">
-		<button id="connect-button">Connect</button>
+		<p>Create/Join Call</p>
+		<div>
+			<button disabled id="create-call-button">Create Call</button>
+		</div>
+
+		<div>
+			<input type="text" id="connect-to-call" placeholder="Enter the call ID">
+			<button disabled id="connect-button">Connect</button>
+		</div>
 	</div>
+
 	<div>
 		<h2>Chat</h2>
 		<div id="call-participants-list"></div>
 		<div id="chat-messages"></div>
 		<input type="text" id="message" placeholder="Enter your message">
-		<button id="send-message">Send</button>
+		<button disabed id="send-message">Send</button>
 	</div>
 </body>
 
