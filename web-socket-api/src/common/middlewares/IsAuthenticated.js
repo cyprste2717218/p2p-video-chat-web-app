@@ -8,8 +8,7 @@ exports.check = (req, res, next) => {
 	const [type, tokenFromHeader] = authHeader.split(' ');
 	const tokenFromCookie = req.cookies?.access_token;
 
-	const token = scheme === 'Bearer' && tokenFromHeader ? tokenFromHeader : tokenFromCookie;
-
+	const token = type === 'Bearer' && tokenFromHeader ? tokenFromHeader : tokenFromCookie;
 
 	if (!token)
 		return res.status(401).json({ success: false, data: { message: 'No token provided' } });
