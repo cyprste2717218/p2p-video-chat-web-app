@@ -49,28 +49,11 @@ exports.register = async (req, res) => {
 			password: hashedPassword
 		});
 
-		const payload = { username: user.username, email: user.email };
-		const accessToken = signAccessToken(payload);
-
-		const jti = createJti();
-		const refreshToken = signRefreshToken(user, jti);
-
-		await persistRefreshToken({
-			user,
-			refreshToken,
-			jti,
-			ip: req.ip,
-			userAgent: req.headers['user-agent'] || ''
-		});
-
-		setRefreshCookie(res, refreshToken);
-
 		res.status(201).json({
 			success: true,
 			data: {
 				message: "Succesful sign up"
 			},
-			token: accessToken
 		});
 	} catch (err) {
 		console.error(err);
@@ -89,6 +72,19 @@ exports.login = async (req, res) => {
 
 		const payload = { username: user.username, email: user.email };
 		const accessToken = signAccessToken(payload);
+
+		const jti = createJti();
+		const refreshToken = signRefreshToken(user, jti);
+
+		await persistRefreshToken({
+			user,
+			refreshToken,
+			jti,
+			ip: req.ip,
+			userAgent: req.headers['user-agent'] || ''
+		});
+
+		setRefreshCookie(res, refreshToken);
 
 		res.status(200).json({
 			success: true,

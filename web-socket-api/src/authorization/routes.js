@@ -3,7 +3,7 @@ const AuthController = require('./controller');
 const { check } = require('../common/middlewares/IsAuthenticated');
 
 router.post('/signup', AuthController.register);
-router.post('/login', check, AuthController.login);
+router.post('/login', AuthController.login);
 router.post('/logout', check, AuthController.logout);
 router.post('/refresh', check, AuthController.refresh);
 
