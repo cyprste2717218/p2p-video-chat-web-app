@@ -263,7 +263,7 @@ curl -X POST http://localhost:3000/call/a1b2c3d4-e5f6-7890-abcd-ef1234567890/lea
 For a machine-readable spec, see `web-socket-api/src/openapi.yaml` (some paths/responses may not match runtime behavior yet).
 
 
-## Environment Variables
+### Environment Variables
 
 In order to sign JWT access and reset tokens, the API requires a `.env` to define the following environment variables:
 
@@ -277,6 +277,7 @@ This should be defined in the `src/` directory in order for the `dev` command to
 `NODE_ENV` can be set to either `dev` or `production`, setting `production` ensures refresh token cookie can only be sent over secure `HTTPS` connections (sets `Secure` property to `true`).
 
 A `.env.example` file has been defined using these defaults for local tesing.
+
 ---
 
 ## Static Site & Client (HTTP server)
