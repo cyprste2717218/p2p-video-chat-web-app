@@ -32,12 +32,18 @@ Authentication (signup, JWT-protected user routes) is partially implemented; cal
 ```
 video-chat-application/
 ├── web-socket-api/          # Express.js signalling API + per-call WebSocket servers
-│   ├── app.js               # API entry point (port 3000 by default)
-│   ├── authorization/       # Signup, login, logout routes
-│   ├── users/               # Authenticated user lookup routes
-│   ├── call/                # Create / join / leave call routes + WS utilities
-│   ├── common/              # DB (SQLite), models, JWT middleware
-│   └── openapi.yaml         # API schema reference (may drift from implementation)
+│   └── src/                 
+│       ├── index.html       # Video chat UI
+│       ├── app.js           # API entry point (port 3000 by default)
+│       ├── authorization/   # Signup, login, logout, reset token provision routes
+│       ├── call/            # Create / join / leave call routes + WS utilities
+│       ├── common/          # DB config (SQLite), models, JWT middleware
+│       ├── storage/         # Raw SQLite DB data and pre-configured DB with test users
+│       └── openapi.yaml     # API schema reference (may drift from implementation)
+│   └── tests/ 
+│       ├── e2e/             # End-to-end tests (Chains of API calls following user journeys)        
+│       ├── it/              # Integration tests 
+│       ├── unit/            # Unit tests (Contract API endpoint tests)     
 ├── web-server/              # HTTP static file server for the web UI
 │   ├── server.js            # Serves files from ./static (port 8000)
 │   └── static/
@@ -74,13 +80,13 @@ npm install
 
 ### 2. Run the Express signalling API
 
-From the `web-socket-api` directory:
+From the `web-socket-api/src` directory:
 
 ```bash
-node app.js
+npm run dev
 ```
 
-Default: `http://<HOST>:3000` (see [Gotchas](#gotchas--experimentation) for the configured `HOST`).
+Default: `http://<HOST>:3000` (`3000` is fallback if `NODE_ENV` environment variable not provided via `web-socket-api/src/.env` ).
 
 Alternatively, from the repo root:
 
@@ -112,60 +118,33 @@ npm run run-video-chat-frontend
 **Base URL:** `http://localhost:3000` (or the host/port configured in `web-socket-api/app.js`)
 
 **Database:** SQLite at `web-socket-api/storage/data.db` (created on first run via Sequelize `sync()`)
-
-### Authentication
-
-Protected routes expect a JWT in the `Authorization` header:
-
-```
-Authorization: Bearer <token>
-```
-
-Tokens are issued on successful **signup** (`POST /signup`). Payload includes `username` and `userId`; secret and expiry are defined in `authorization/controller.js` (`72h` expiry for now for dev purposes).
-
-
-| Route                                                                    | Auth required                                                                      |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `POST /signup`                                                           | No                                                                                 |
-| `POST /login`                                                            | No (handler not implemented)                                                       |
-| `POST /logout`                                                           | No (handler not implemented)                                                       |
-| `GET /user`, `GET /user/all`                                             | **Yes** — Bearer JWT                                                               |
-| `POST /call/create`, `PUT /call/join/:callId`, `PUT /call/leave/:callId` | **No** in current code — `username` (and optionally token in OpenAPI) in body only |
-
+<br><br>
+<i>Note:</i> To use test DB copy `example.data.db` and rename to `data.db` before spinning up API for first time.
 
 ### API Routes
 
 #### Auth (`/`)
 
 
-| Method | Path      | Request body                                                                          | Success response                                                                       |
-| ------ | --------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `POST` | `/signup` | `{ "username": string (min 3), "email": string (email), "password": string (min 6) }` | `201` — `{ "success": true, "user": { "id", "username", "email" }, "token": "<jwt>" }` |
-| `POST` | `/login`  | (planned) username or email + password                                                | Not implemented                                                                        |
-| `POST` | `/logout` | —                                                                                     | Not implemented                                                                        |
+| Method | Path      | Auth | Request body                                                                          | Success response                                                                       |
+| ------ | --------- | ---- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `POST` | `/signup` | No   | `{ "username": string (min 3), "email": string (email), "password": string (min 6) }` | `201` — `{ "success": true, "data": {"message": "Succesful sign up"}}` |
+| `POST` | `/login`  | No   | `{ "email": string (email), "password": string (min 6) }`                             | `200` — `{ "success": true, "data": { "accessToken": "<jwt>"}}`                        |
+| `POST` | `/logout` | Yes  | —                                                                                     | `200` — `{ "success": true, "data": {"message": "Logged out succesfully"}}`           |
+| `POST` | `/refresh` | Yes | —                                                                                     | `200` — `{ "success": true}`                                                           |
 
 
 **Signup validation errors:** `400` — `{ "error": "Invalid input", "details": [...] }`
 
-#### Users (`/user`)
-
-
-| Method | Path        | Auth       | Success response                    |
-| ------ | ----------- | ---------- | ----------------------------------- |
-| `GET`  | `/user`     | Bearer JWT | `200` — `{ "data": <User> }`        |
-| `GET`  | `/user/all` | Bearer JWT | `200` — `{ "data": [<User>, ...] }` |
-
-
-**User object fields:** `id`, `username`, `email`, `password` (hashed), `createdAt`, `updatedAt`
-
 #### Calls (`/call`)
 
 
-| Method | Path                  | Request                                                 | Success response                                                                     |
-| ------ | --------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `POST` | `/call/create`        | Body: `{ "username": string }`                          | `201` — `{ "success": true, "data": { "callId": "<uuid>", "callURL": "ws://..." } }` |
-| `PUT`  | `/call/join/:callId`  | Params: `callId` (UUID). Body: `{ "username": string }` | `201` — `{ "success": true, "data": { "callURL": "ws://..." } }`                     |
-| `PUT`  | `/call/leave/:callId` | (planned)                                               | Not implemented                                                                      |
+| Method | Path                  | Auth | Request                                                 | Success response                                                                     |
+| ------ | --------------------- | ---- | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `POST` | `/call/create`        | Yes  | —                         | `201` — `{ "success": true, "data": { "callID": "<uuid>", "callURL": "ws://..." } }` |
+| `PUT`  | `/call/:callID/join`  | Yes  | Params: `callID` (UUID). Body: `{ "username": string }` | `200` — `{ "success": true, "data": { "callURL": "ws://..." }}`                     |
+| `DELETE`  | `/call/:callID/leave` | Yes  | —                                               | `200` — `{ "success": true, "data": { "message": "Succesfully left call" }}`                                                                     |
+| `POST`  | `/call/:callID/messages` | Yes  | —                                               | `201` — `{ "success": true, "data": { "message": "Message sent to all call participants succesfully" }}`   
 
 
 **Call errors (examples):**
@@ -175,6 +154,16 @@ Tokens are issued on successful **signup** (`POST /signup`). Payload includes `u
 - `500` — server error: `{ "success": false, "error": "<message>" }`
 
 Creating a call also starts a **WebSocket server** on a random port and stores session state in an in-memory `Map` (`callId` → `{ wsURL, participants, pendingParticipants }`).
+
+### Authentication
+
+Protected routes expect a JWT in the `Authorization` header:
+
+```
+Authorization: Bearer <token>
+```
+
+Tokens are issued on successful **login** (`POST /login`). Secrets for creating access and refresh token JWTs is provided via `.env`, expirys for both are defined in `common/middlewares/tokens.js`.
 
 ### WebSocket signalling (per call)
 
@@ -216,8 +205,6 @@ In `example.data.db`, the following users have been defined for testing:
 }
 ```
 
-**Login using existing details**
-
 **Register a user**
 
 ```bash
@@ -226,43 +213,31 @@ curl -X POST http://localhost:3000/signup \
   -d '{"username":"alice","email":"alice@example.com","password":"secret12"}'
 ```
 
-**Get current user (authenticated)**
+**Login**
 
 ```bash
-curl http://localhost:3000/user \
-  -H "Authorization: Bearer <token-from-signup>" \
-  -d '{"userId":"36"}'
+curl -X POST http://localhost:3000/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice@example.com","password":"secret12"}'
 ```
 
 **Create a call**
 
 ```bash
 curl -X POST http://localhost:3000/call/create \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"username":"alice"}'
-```
-
-Example response:
-
-```json
-{
-  "success": true,
-  "data": {
-    "callId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "callURL": "ws://localhost:4521"
-  }
-}
 ```
 
 **Join an existing call**
 
 ```bash
-curl -X PUT http://localhost:3000/call/join/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+curl -X POST http://localhost:3000/call/a1b2c3d4-e5f6-7890-abcd-ef1234567890/join \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"username":"bob"}'
 ```
 
-For a machine-readable spec, see `web-socket-api/openapi.yaml` (some paths/responses may not match runtime behavior yet).
+For a machine-readable spec, see `web-socket-api/src/openapi.yaml` (some paths/responses may not match runtime behavior yet).
 
 ---
 
@@ -277,14 +252,12 @@ For a machine-readable spec, see `web-socket-api/openapi.yaml` (some paths/respo
 Orchestrates the UI and signalling client:
 
 - **Create call** — `POST` to `/call/create` with username; displays `callId`; calls `getLocalMedia()`; opens WebSocket to `callURL`; on `open`, sends `newParticipantOnCall`.
-- **Join call** — `PUT` to `/call/join/:callId`; same media + WebSocket flow.
+- **Join call** — `PUT` to `/call/:callId/join`; same media + WebSocket flow.
 - **WebSocket `message` handler** — switches on `type`:
   - Chat / join notifications → append to `#chat-messages`
   - `responseCurrentCallParticipants` → for each peer, `sendOffer()` and send resulting message over WebSocket; update participant list in the DOM
   - `offer` — logged (answer/ICE handling not fully wired)
 - **Hang up** — stub (`hangUpCall` empty)
-
-API URLs in `client.js` are hardcoded to `http://192.168.0.60:3000` — align with your API host when testing locally.
 
 ### `rtcUtils.js`
 
@@ -301,9 +274,6 @@ Negotiation is **in progress**: offers are created and sent via the signalling s
 ## Gotchas & Experimentation
 
 1. **API working directory** — SQLite path is `./storage/data.db` relative to where `app.js` is started; prefer running from `web-socket-api/`.
-2. **Incomplete endpoints** — `POST /login`, `POST /logout`, and `PUT /call/leave/:callId` are stubs. Do not expect login/logout or leave-call to work at current
+2. **Incomplete endpoints** — `POST /login` and `DELETE /call/:callID/leave` are stubs. Do not expect login/logout or leave-call to work at current
 3. **Middleware import casing** — User routes import `../common/middlewares/isAuthenticated` while the file is `IsAuthenticated.js`. This works on case-insensitive filesystems (Windows) but can fail on Linux — will need to rename or fix the import in this case
-4. **Call auth vs OpenAPI** — OpenAPI describes `token` on call routes; the implementation only validates `username` today.
-5. **In-memory calls** — Restarting the API clears all active calls and WebSocket servers. No persistence of live sessions to the `Call` Sequelize model yet.
-6. **Second `getLocalMedia()` call** — Re-clicking create/join without refresh throws `"Already capturing local media"`.
-
+4. **In-memory calls** — Restarting the API clears all active calls and WebSocket servers. No persistence of live sessions to the `Call` Sequelize model yet.
