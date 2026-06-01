@@ -86,7 +86,7 @@ exports.createCall = async (req, res) => {
 
 
 	} catch (err) {
-		res.status(500).json({ success: false, error: err.message });
+		res.status(500).json({ success: false, data: { error: err.message } });
 	}
 
 };
@@ -97,18 +97,18 @@ exports.joinCall = async (req, res) => {
 
 		// validate request params
 		if (!validateJoinCallParams(req.params)) {
-			return res.status(400).json({ success: false, error: 'Invalid input', details: validateJoinCallParams.errors });
+			return res.status(400).json({ success: false, data: { error: 'Invalid input', details: validateJoinCallParams.errors } });
 		}
 
 		// validate request body
 		if (!validateJoinCallBody(req.body)) {
-			return res.status(400).json({ success: false, error: 'Invalid input', details: validateJoinCallBody.errors });
+			return res.status(400).json({ success: false, data: { error: 'Invalid input', details: validateJoinCallBody.errors } });
 		}
 
 		// check if call id exists
 		const retrievedCallConfig = await activeSessions.get(req.params.callID);
 		if (!retrievedCallConfig) {
-			return res.status(404).json({ success: false, error: 'Call ID not present' });
+			return res.status(404).json({ success: false, data: { error: 'Call ID not present' } });
 		}
 
 		// add pending participant (has to join WebSocket server) to in-memory config for current call
@@ -125,7 +125,7 @@ exports.joinCall = async (req, res) => {
 
 
 	} catch (err) {
-		res.status(500).json({ success: false, error: err.message, reqBody: String(req.body) });
+		res.status(500).json({ success: false, data: { error: 'Server error' } });
 	}
 
 

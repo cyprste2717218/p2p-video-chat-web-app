@@ -65,10 +65,10 @@ exports.login = async (req, res) => {
 	try {
 		const { email, password } = req.body;
 		const user = await User.findByPk(email);
-		if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+		if (!user) return res.status(400).json({ success: false, data: { message: 'Invalid credentials' } });
 
 		const isMatch = await bcrypt.compare(password, user.password);
-		if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+		if (!isMatch) return res.status(400).json({ success: false, data: { message: 'Invalid credentials' } });
 
 		const payload = { username: user.username, email: user.email };
 		const accessToken = signAccessToken(payload);
@@ -129,7 +129,7 @@ exports.refresh = async (req, res) => {
 		try {
 			decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
 		} catch (err) {
-			return res.status(401).json({ message: 'Invalid or expired refresh token' });
+			return res.status(401).json({ success: false, data: { message: 'Invalid or expired refresh token' } });
 		}
 
 		const tokenHash = hashToken(token);

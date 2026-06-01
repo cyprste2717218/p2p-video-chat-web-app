@@ -134,7 +134,22 @@ npm run run-video-chat-frontend
 | `POST` | `/refresh` | Yes | —                                                                                     | `200` — `{ "success": true}`                                                           |
 
 
-**Signup validation errors:** `400` — `{ "error": "Invalid input", "details": [...] }`
+**Signup errors:** 
+
+- `400` — invalid body: `{ "success": "false", "data": { "message": "Invalid credentials"}}`
+- `500` — server error: `{ "success": false, "data": { "message": "Server error" } }`
+
+**Login errors:**
+
+- `400` — invalid body: `{ "success": "false", "data": { "message": "Invalid credentials" }}`
+- `500` — server error: `{ "success": false, "data": { "message": "Server error" } }`
+
+**Logout errors:**
+- `500` — server error: `{ "success": "false", "data": { "message": "Server error" } }`
+
+**Refresh errors:**
+- `401` — invalid/expired refresh token: `{ "success": "false", "data": { "message": "Invalid or expired refresh token" }}`
+- `500` — server error: `{ "success": "false", "data": { "message": "Server error" } }`
 
 #### Calls (`/call`)
 
@@ -237,8 +252,31 @@ curl -X POST http://localhost:3000/call/a1b2c3d4-e5f6-7890-abcd-ef1234567890/joi
   -H "Content-Type: application/json" \
 ```
 
+**Leave a call**
+
+```bash
+curl -X POST http://localhost:3000/call/a1b2c3d4-e5f6-7890-abcd-ef1234567890/leave \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+```
+
 For a machine-readable spec, see `web-socket-api/src/openapi.yaml` (some paths/responses may not match runtime behavior yet).
 
+
+## Environment Variables
+
+In order to sign JWT access and reset tokens, the API requires a `.env` to define the following environment variables:
+
+```ini
+JWT_SECRET=thesecret
+REFRESH_TOKEN_SECRET=anothersecret
+NODE_ENV=dev
+```
+
+This should be defined in the `src/` directory in order for the `dev` command to spin up the server to provide these variables.
+`NODE_ENV` can be set to either `dev` or `production`, setting `production` ensures refresh token cookie can only be sent over secure `HTTPS` connections (sets `Secure` property to `true`).
+
+A `.env.example` file has been defined using these defaults for local tesing.
 ---
 
 ## Static Site & Client (HTTP server)
@@ -277,3 +315,4 @@ Negotiation is **in progress**: offers are created and sent via the signalling s
 2. **Incomplete endpoints** — `POST /login` and `DELETE /call/:callID/leave` are stubs. Do not expect login/logout or leave-call to work at current
 3. **Middleware import casing** — User routes import `../common/middlewares/isAuthenticated` while the file is `IsAuthenticated.js`. This works on case-insensitive filesystems (Windows) but can fail on Linux — will need to rename or fix the import in this case
 4. **In-memory calls** — Restarting the API clears all active calls and WebSocket servers. No persistence of live sessions to the `Call` Sequelize model yet.
+
