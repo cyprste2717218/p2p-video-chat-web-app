@@ -199,6 +199,25 @@ After `create` or `join`, clients connect to `callURL` and send JSON messages, f
 
 ### API examples
 
+In `example.data.db`, the following users have been defined for testing:
+
+```json                                    
+{
+  username: john2739
+  email: john.smith@gmail.com 
+  password: ExamplePassword123
+}
+```
+```json
+{
+  username: sam8282
+  email: sam.clarence@gmail.com 
+  password: ExamplePassword456
+}
+```
+
+**Login using existing details**
+
 **Register a user**
 
 ```bash
