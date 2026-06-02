@@ -313,7 +313,6 @@ Negotiation is **in progress**: offers are created and sent via the signalling s
 ## Gotchas & Experimentation
 
 1. **API working directory** — SQLite path is `./storage/data.db` relative to where `app.js` is started; prefer running from `web-socket-api/`.
-2. **Incomplete endpoints** — `POST /login` and `DELETE /call/:callID/leave` are stubs. Do not expect login/logout or leave-call to work at current
-3. **Middleware import casing** — User routes import `../common/middlewares/isAuthenticated` while the file is `IsAuthenticated.js`. This works on case-insensitive filesystems (Windows) but can fail on Linux — will need to rename or fix the import in this case
-4. **In-memory calls** — Restarting the API clears all active calls and WebSocket servers. No persistence of live sessions to the `Call` Sequelize model yet.
+2. **Incomplete endpoints** — `DELETE /call/:callID/leave` is a stub. Do not expect leave-call to work at current
+3. **In-memory calls** — Restarting the API clears all active calls and WebSocket servers. No persistence of live sessions to the `Call` Sequelize model yet.
 
