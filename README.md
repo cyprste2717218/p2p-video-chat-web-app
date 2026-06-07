@@ -25,7 +25,6 @@ Typical flow:
 3. The client connects to that WebSocket server and exchanges signalling messages (participants, offers, chat).
 4. WebRTC negotiation runs in the browser (`rtcUtils.js`) to establish P2P video/audio where implemented.
 
-Authentication (signup, JWT-protected user routes) is partially implemented; call endpoints currently rely on a `username` in the request body rather than JWT (I intend to switch this over).
 
 ## Project Structure
 
@@ -157,9 +156,9 @@ npm run run-video-chat-frontend
 | Method | Path                  | Auth | Request                                                 | Success response                                                                     |
 | ------ | --------------------- | ---- | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | `POST` | `/call/create`        | Yes  | —                         | `201` — `{ "success": true, "data": { "callID": "<uuid>", "callURL": "ws://..." } }` |
-| `PUT`  | `/call/:callID/join`  | Yes  | Params: `callID` (UUID). Body: `{ "username": string }` | `200` — `{ "success": true, "data": { "callURL": "ws://..." }}`                     |
-| `DELETE`  | `/call/:callID/leave` | Yes  | —                                               | `200` — `{ "success": true, "data": { "message": "Succesfully left call" }}`                                                                     |
-| `POST`  | `/call/:callID/messages` | Yes  | —                                               | `201` — `{ "success": true, "data": { "message": "Message sent to all call participants succesfully" }}`   
+| `PUT`  | `/call/:callID/join`  | Yes  | Params: `callID` (UUID) | `200` — `{ "success": true, "data": { "callURL": "ws://..." }}`                     |
+| `DELETE`  | `/call/:callID/leave` | Yes  | Params: `callID` (UUID)                                               | `200` — `{ "success": true, "data": { "message": "Succesfully left call" }}`                                                                     |
+| `POST`  | `/call/:callID/messages` | Yes  | Params: `callID` (UUID)                                               | `201` — `{ "success": true, "data": { "message": "Message sent to all call participants succesfully" }}`   
 
 
 **Call errors (examples):**
