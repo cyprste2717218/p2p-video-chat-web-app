@@ -1,47 +1,13 @@
 //require our websocket library 
 var WebSocketServer = require('ws').Server;
 const uuid = require('uuid');
-const { wss, handleOffer, handleNewCallParticipantMsg, broadcast, constructURI } = require('./misc');
+const { handleOffer, handleNewCallParticipantMsg, broadcast, constructURI, setRandomPort } = require('./misc');
+const { wss } = require('./session-store');
 
-const activeSessions = new Map();
-exports.activeSessions = activeSessions;
 
 exports.createWebSocketsServer = async () => {
 
-	function setRandomPort() {
-		function generateRandomPort() {
-			return Math.floor(1000 + Math.random() * 9000);
-		}
-
-		let randomPort;
-		try {
-			// checking new port does not conflict with existing WS server
-			const generatedPort = generateRandomPort();
-
-
-			const activelyUsedPorts = [...activeSessions.keys()];
-			const portsSet = new Set(activelyUsedPorts);
-			if (portsSet.has(generatedPort)) {
-				throw new Error("Generated port number already in use");
-			}
-
-			randomPort = generatedPort;
-
-		} catch (err) {
-			if (err !== "Generated port number already in use") {
-				throw new Error(err);
-			}
-
-			const portNum = setRandomPort();
-			randomPort = portNum;
-
-		}
-
-		return randomPort;
-
-	}
-
-	const callId = uuid.v4();
+	const callID = uuid.v4();
 
 	//creating a websocket server at random port 
 	const portNum = setRandomPort();
@@ -49,10 +15,11 @@ exports.createWebSocketsServer = async () => {
 
 
 	try {
-		wss = new WebSocketServer({ port: portNum });
+		wss.callID = new WebSocketServer({ port: portNum });
 
-		wss.on('connection', function (connection) {
+		const activeWSS = wss.callID;
 
+		activeWSS.on('connection', function (connection) {
 
 			//when server gets a message from a connected user 
 			connection.on('message', function (message) {
@@ -69,7 +36,7 @@ exports.createWebSocketsServer = async () => {
 
 						// getting return object to sendd to client
 						const currentCallParticipantsMsg = handleNewCallParticipantMsg(data);
-						connection.send(currentCallParticipantsMsg)
+						connection.send(currentCallParticipantsMsg);
 						break;
 					case 'chatMessage':
 						const newChatMessage =
@@ -94,10 +61,11 @@ exports.createWebSocketsServer = async () => {
 
 		});
 
-		const uri = constructURI();
-		return { callId, uri };
+		const uri = constructURI(callID);
+		return { callID, uri };
 
 	} catch (err) {
+		console.error("This is the error:", err);
 		throw new Error("Error creating WebSockets Server:", err);
 	}
 

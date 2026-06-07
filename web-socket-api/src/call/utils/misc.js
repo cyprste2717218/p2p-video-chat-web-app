@@ -1,10 +1,10 @@
-let wss;
-exports.wss = wss;
+const { wss, activeSessions } = require('./session-store');
 
-exports.constructURI = () => {
+exports.constructURI = (callID) => {
 
 	// constructing URI of WS server created
-	const addressInfo = wss.address();
+	const relevantWSS = wss.callID;
+	const addressInfo = relevantWSS.address();
 
 	const host = addressInfo.address === '::' ? 'localhost' : addressInfo.address;
 	const port = addressInfo.port;
@@ -96,4 +96,39 @@ exports.handleOffer = (data) => {
 	}
 
 	sendMessageToParticipant(recipient, offerMessageToReceipient);
-}	
+}
+
+exports.setRandomPort = () => {
+	function generateRandomPort() {
+		return Math.floor(1000 + Math.random() * 9000);
+	}
+
+	let randomPort;
+	try {
+		// checking new port does not conflict with existing WS server
+		const generatedPort = generateRandomPort();
+
+
+		if (activeSessions.size > 0) {
+			const activelyUsedPorts = [...activeSessions.keys()];
+			const portsSet = new Set(activelyUsedPorts);
+			if (portsSet.has(generatedPort)) {
+				throw new Error("Generated port number already in use");
+			}
+		}
+
+		randomPort = generatedPort;
+
+	} catch (err) {
+		if (err !== "Generated port number already in use") {
+			throw new Error(err);
+		}
+
+		const portNum = setRandomPort();
+		randomPort = portNum;
+
+	}
+
+	return randomPort;
+
+}

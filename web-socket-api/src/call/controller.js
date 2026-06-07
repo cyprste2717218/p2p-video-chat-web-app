@@ -5,7 +5,8 @@ const Call = defineCall(sequelize);
 
 const Ajv = require('ajv');
 const addFormats = require("ajv-formats");
-const { createWebSocketsServer, activeSessions } = require('./utils/ws-server');
+const { createWebSocketsServer } = require('./utils/ws-server');
+const { activeSessions } = require('./utils/session-store');
 const ajv = new Ajv();
 addFormats(ajv);
 
@@ -25,37 +26,25 @@ const joinCallBodySchema = {
 	}
 };
 
-const createCallSchema = {
-	type: 'object',
-	required: ['username'],
-	properties: {
-		username: { type: 'string' }
-	}
-}
+
 
 const validateJoinCallParams = ajv.compile(joinCallParamsSchema);
 const validateJoinCallBody = ajv.compile(joinCallBodySchema);
 
-const validateCreateCall = ajv.compile(createCallSchema)
 
 
 exports.createCall = async (req, res) => {
 
 	try {
 
-		// validate request body
-
-		if (!validateCreateCall(req.body)) {
-			return res.status(400).json({ error: 'Invalid input', details: validateCreateCall.errors });
-		}
-
-		const { username } = req.body;
+		const email = req.user.email;
 
 		const wsServerInfo = { callID: "", uri: "" };
 
 		// Handling creating new websockets server for call
 		try {
 			const { callID, uri } = await createWebSocketsServer();
+			console.log(callID, uri);
 			wsServerInfo.callID = callID;
 			wsServerInfo.uri = uri;
 
@@ -75,18 +64,20 @@ exports.createCall = async (req, res) => {
 
 		const callConfig = {
 			wsURL: uri,
-			participants: [username],
+			participants: [email],
 			pendingParticipants: []
 		}
 
 		// create call ID and store alongside created websockets server URL in memory
 		activeSessions.set(callID, callConfig);
+		console.log("activeSessions:", activeSessions);
 
 		res.status(201).json({ success: true, data: { callID: callID, callURL: uri } });
 
 
 	} catch (err) {
-		res.status(500).json({ success: false, data: { error: err.message } });
+		console.error("This is th err:", err);
+		res.status(500).json({ success: false, data: { error: 'Server error' } });
 	}
 
 };
