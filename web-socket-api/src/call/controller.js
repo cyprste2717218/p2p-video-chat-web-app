@@ -10,7 +10,7 @@ const { activeSessions } = require('./utils/session-store');
 const ajv = new Ajv();
 addFormats(ajv);
 
-const joinCallParamsSchema = {
+const callParamsSchema = {
 	type: 'object',
 	required: ['callID'],
 	properties: {
@@ -21,7 +21,7 @@ const joinCallParamsSchema = {
 
 
 
-const validateJoinCallParams = ajv.compile(joinCallParamsSchema);
+const validateCallParams = ajv.compile(callParamsSchema);
 
 exports.createCall = async (req, res) => {
 
@@ -77,11 +77,11 @@ exports.joinCall = async (req, res) => {
 	try {
 
 		// validate request params
-		if (!validateJoinCallParams(req.params)) {
-			return res.status(400).json({ success: false, data: { error: 'No Call ID passed', details: validateJoinCallParams.errors } });
+		if (!validateCallParams(req.params)) {
+			return res.status(400).json({ success: false, data: { error: 'No Call ID passed', details: validateCallParams.errors } });
 		}
 
-		// check if call id exists
+		// check if call ID exists
 		const retrievedCallConfig = await activeSessions.get(req.params.callID);
 		if (!retrievedCallConfig) {
 			return res.status(404).json({ success: false, data: { error: 'Call ID not present' } });
@@ -113,9 +113,21 @@ exports.joinCall = async (req, res) => {
 exports.leaveCall = async (req, res) => {
 
 	try {
+		// validate request params
+		if (!validateCallParams(req.params)) {
+			return res.status(400).json({ success: false, data: { error: 'No Call ID passed', details: validateCallParams.errors } });
+		}
+
+		// check if call ID exists
+		const retrievedCallConfig = await activeSessions.get(req.params.callID);
+		if (!retrievedCallConfig) {
+			return res.status(404).json({ success: false, data: { error: 'Call ID not present' } });
+		}
+
+		const email = req.user.email;
 
 	} catch (err) {
-
+		res.status(500).json({ success: false, data: { error: 'Server error' } });
 	}
 };
 
