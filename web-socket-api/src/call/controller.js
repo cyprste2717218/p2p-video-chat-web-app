@@ -18,9 +18,6 @@ const callParamsSchema = {
 	}
 };
 
-
-
-
 const validateCallParams = ajv.compile(callParamsSchema);
 
 exports.createCall = async (req, res) => {

@@ -25,6 +25,7 @@ Typical flow:
 3. The client connects to that WebSocket server and exchanges signalling messages (participants, offers, chat).
 4. WebRTC negotiation runs in the browser (`rtcUtils.js`) to establish P2P video/audio where implemented.
 
+Note: Handling of receieved access token JWTs on the client side is not implemented yet, will need to implement Web workers on non-main thread on frontend.
 
 ## Project Structure
 
