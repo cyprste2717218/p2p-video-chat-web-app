@@ -18,20 +18,10 @@ const joinCallParamsSchema = {
 	}
 };
 
-const joinCallBodySchema = {
-	type: 'object',
-	required: ['username'],
-	properties: {
-		username: { type: 'string' }
-	}
-};
 
 
 
 const validateJoinCallParams = ajv.compile(joinCallParamsSchema);
-const validateJoinCallBody = ajv.compile(joinCallBodySchema);
-
-
 
 exports.createCall = async (req, res) => {
 
@@ -88,12 +78,7 @@ exports.joinCall = async (req, res) => {
 
 		// validate request params
 		if (!validateJoinCallParams(req.params)) {
-			return res.status(400).json({ success: false, data: { error: 'Invalid input', details: validateJoinCallParams.errors } });
-		}
-
-		// validate request body
-		if (!validateJoinCallBody(req.body)) {
-			return res.status(400).json({ success: false, data: { error: 'Invalid input', details: validateJoinCallBody.errors } });
+			return res.status(400).json({ success: false, data: { error: 'No Call ID passed', details: validateJoinCallParams.errors } });
 		}
 
 		// check if call id exists
@@ -103,14 +88,17 @@ exports.joinCall = async (req, res) => {
 		}
 
 		// add pending participant (has to join WebSocket server) to in-memory config for current call
-		const { username } = req.body;
+		const email = req.user.email;
 
 
 		const pendingParticipants = retrievedCallConfig.pendingParticipants;
-		pendingParticipants.push(username);
+		pendingParticipants.push(email);
 
 		// retrieving the URL of the web socket server
 		const retrievedCallURL = retrievedCallConfig.wsURL;
+
+
+		console.log("activeSessions:", activeSessions);
 
 		return res.status(201).json({ success: true, data: { callURL: retrievedCallURL } });
 
