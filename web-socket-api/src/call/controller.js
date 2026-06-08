@@ -2,6 +2,9 @@ const sequelize = require('../common/database');
 const defineCall = require('../common/models/Call');
 const Call = defineCall(sequelize);
 
+const defineUser = require('../common/models/User');
+const User = defineUser(sequelize);
+
 
 const Ajv = require('ajv');
 const addFormats = require("ajv-formats");
@@ -49,15 +52,22 @@ exports.createCall = async (req, res) => {
 		const uri = wsServerInfo.uri;
 		const callID = wsServerInfo.callID;
 
-		const callConfig = {
-			wsURL: uri,
-			participants: [email],
-			pendingParticipants: []
+		// Find the entry in 'users' table for user creating the call 
+		const retrievedUser = await User.findByPk(email);
+		if (retrievedUser === null) {
+			console.error(`User with email: ${email} not found in Users table`);
+			throw new Error("Error finding record for user creating call");
 		}
 
-		// create call ID and store alongside created websockets server URL in memory
-		activeSessions.set(callID, callConfig);
-		console.log("activeSessions:", activeSessions);
+		// Add new call details and linked user to DB
+		const newCall = Call.create({
+			callID,
+			callURL: uri,
+			totalDurationSecs: 0,
+			participants: [],
+			pendingParticipants: [retrievedUser],
+			activeCall: false
+		})
 
 		res.status(201).json({ success: true, data: { callID: callID, callURL: uri } });
 
