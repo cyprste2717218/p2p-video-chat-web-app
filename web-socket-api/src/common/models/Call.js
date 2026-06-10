@@ -7,4 +7,4 @@ const CallModel = {
 	activeCall: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
 };
 
-module.exports = (sequelize) => sequelize.define('call', CallModel);
+module.exports = (sequelize) => sequelize.define('call', CallModel, { timestamps: false });

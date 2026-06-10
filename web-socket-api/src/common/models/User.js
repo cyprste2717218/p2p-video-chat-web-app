@@ -6,4 +6,4 @@ const UserModel = {
 	password: { type: DataTypes.STRING, allowNull: false },
 };
 
-module.exports = (sequelize) => sequelize.define('user', UserModel);
+module.exports = (sequelize) => sequelize.define('user', UserModel, { timestamps: false });

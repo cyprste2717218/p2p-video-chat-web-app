@@ -11,4 +11,4 @@ const CallParticipantsModel = {
 	}
 };
 
-module.exports = (sequelize) => sequelize.define('callParticipants', CallParticipantsModel);
+module.exports = (sequelize) => sequelize.define('callParticipants', CallParticipantsModel, { timestamps: false },);

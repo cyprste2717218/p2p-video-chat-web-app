@@ -1,4 +1,6 @@
+const { DataTypes } = require('sequelize');
 const sequelize = require('../database');
+
 
 const defineUser = require('./User');
 const defineCall = require('./Call');
@@ -8,11 +10,12 @@ const defineCallParticipants = require('./CallParticipants');
 const User = defineUser(sequelize);
 const Call = defineCall(sequelize);
 const RefreshToken = defineRefreshToken(sequelize);
-const CallParticipants = defineCallParticipants(sequelize);
+const CallParticipants = defineCallParticipants(sequelize, { timestamps: false });
 
 User.belongsToMany(Call, { through: CallParticipants });
 Call.belongsToMany(User, { through: CallParticipants });
 User.hasOne(RefreshToken);
+RefreshToken.belongsTo(User);
 
 sequelize.sync();
 

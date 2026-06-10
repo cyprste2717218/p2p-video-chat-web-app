@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 
 const RefreshTokenModel = {
-	linkedUser: { type: DataTypes.STRING, allowNull: false, references: { model: 'users', key: 'email' } },
 	tokenHash: { type: DataTypes.STRING, allowNull: false, unique: true },
 	jti: { type: DataTypes.STRING, allowNull: false },
 	expiresAt: { type: DataTypes.DATE, allowNull: false },
@@ -23,4 +22,4 @@ const modelIndexes = {
 	]
 }
 
-module.exports = (sequelize) => sequelize.define('refreshToken', RefreshTokenModel, modelIndexes);
+module.exports = (sequelize) => sequelize.define('refreshToken', RefreshTokenModel, { timestamps: false }, modelIndexes);
