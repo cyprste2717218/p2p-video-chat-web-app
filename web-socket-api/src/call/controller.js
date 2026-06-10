@@ -83,13 +83,16 @@ exports.joinCall = async (req, res) => {
 		}
 
 		// check if call ID exists
-
 		const requestedCall = await Call.findByPk(req.params.callID);
 		if (!requestedCall) {
 			return res.status(404).json({ success: false, data: { error: 'Call ID not present' } });
 		}
 
-
+		// verify call has not ended yet
+		const isCallFinished = requestedCall.finishedAt;
+		if (isCallFinished) {
+			return res.status(400).json({ success: false, data: { error: 'Call has ended' } });
+		}
 
 		// Find the entry in 'users' table for user joining the call 
 		const email = req.user.email;
@@ -123,7 +126,18 @@ exports.leaveCall = async (req, res) => {
 			return res.status(400).json({ success: false, data: { error: 'No Call ID passed', details: validateCallParams.errors } });
 		}
 
+
 		// check if call ID exists
+
+
+		// given call exists, check if it is active
+
+		// if is active, but still at least one remaining participant just unlink requesting user from the call
+
+		// if is active, and user is last person to leave, set active status to false, update call duration,set finishTime to current time, close down websocket server associated with call
+
+
+
 		const requestedCallConfig = await activeSessions.get(req.params.callID);
 		if (!requestedCallConfig) {
 			return res.status(404).json({ success: false, data: { error: 'Call ID not present' } });
