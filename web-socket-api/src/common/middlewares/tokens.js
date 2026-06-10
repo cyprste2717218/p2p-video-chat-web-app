@@ -29,7 +29,7 @@ function signRefreshToken(user, jti) {
 async function persistRefreshToken({ user, refreshToken, jti, ip, userAgent }) {
 	const tokenHash = hashToken(refreshToken);
 	const expiresAt = new Date(Date.now() + REFRESH_TTL_SEC * 1000);
-	await RefreshToken.create({ linkedUser: user.email, tokenHash, jti, expiresAt, ip, userAgent });
+	await RefreshToken.create({ userEmail: user.email, tokenHash, jti, expiresAt, ip, userAgent });
 }
 
 function setRefreshCookie(res, refreshToken) {

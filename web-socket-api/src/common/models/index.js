@@ -10,11 +10,15 @@ const defineCallParticipants = require('./CallParticipants');
 const User = defineUser(sequelize);
 const Call = defineCall(sequelize);
 const RefreshToken = defineRefreshToken(sequelize);
-const CallParticipants = defineCallParticipants(sequelize, { timestamps: false });
+const CallParticipants = defineCallParticipants(sequelize);
 
 User.belongsToMany(Call, { through: CallParticipants });
 Call.belongsToMany(User, { through: CallParticipants });
-User.hasOne(RefreshToken);
+User.hasOne(RefreshToken, {
+	foreignKey: {
+		allowNull: false,
+	},
+});
 RefreshToken.belongsTo(User);
 
 sequelize.sync();
