@@ -1,8 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const sequelize = require('../database');
-const defineRefreshToken = require('../models/RefreshToken');
-const RefreshToken = defineRefreshToken(sequelize);
+const { RefreshToken } = require('../models');
+
 
 const ACCESS_TTL = '15m';
 const REFRESH_TTL_SEC = 60 * 60 * 24 * 7; // 7 days

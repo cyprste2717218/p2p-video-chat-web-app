@@ -1,19 +1,6 @@
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const sequelize = require('./common/database');
-
-
-const defineUser = require('./common/models/User');
-const User = defineUser(sequelize);
-
-const defineCall = require('./common/models/Call');
-const Call = defineCall(sequelize);
-
-const defineRefreshToken = require('./common/models/RefreshToken');
-const RefreshToken = defineRefreshToken(sequelize);
-
-Call.Users = Call.hasMany(User);
-User.RefreshToken = User.hasOne(RefreshToken)
+const { sequelize } = require('./common/models');
 
 const express = require('express');
 const app = express();
@@ -26,8 +13,6 @@ app.use(cors({
 }));
 app.use(express.json());
 
-
-sequelize.sync();
 
 const authRoutes = require('./authorization/routes');
 app.use('/', authRoutes);

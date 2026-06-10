@@ -9,12 +9,7 @@ const {
 	rotateRefreshToken
 } = require('../common/middlewares/tokens');
 
-const sequelize = require('../common/database');
-const defineUser = require('../common/models/User');
-const User = defineUser(sequelize);
-
-const defineRefreshToken = require('../common/models/RefreshToken');
-const RefreshToken = defineRefreshToken(sequelize);
+const { User } = require('../common/models');
 
 const Ajv = require('ajv');
 const addFormats = require("ajv-formats")

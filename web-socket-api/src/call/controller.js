@@ -1,10 +1,4 @@
-const sequelize = require('../common/database');
-const defineCall = require('../common/models/Call');
-const Call = defineCall(sequelize);
-
-const defineUser = require('../common/models/User');
-const User = defineUser(sequelize);
-
+const { Call, User } = require('../common/models');
 
 const Ajv = require('ajv');
 const addFormats = require("ajv-formats");
@@ -60,14 +54,19 @@ exports.createCall = async (req, res) => {
 		}
 
 		// Add new call details and linked user to DB
-		const newCall = Call.create({
+		const newCall = await Call.create({
 			callID,
 			callURL: uri,
 			totalDurationSecs: 0,
-			participants: [],
-			pendingParticipants: [retrievedUser],
-			activeCall: false
-		})
+			activeCall: false,
+		});
+
+
+
+		console.log(await newCall.getUsers())
+		newCall.addUser(retrievedUser);
+
+		// await retrievedUser.update({ callID: callID });
 
 		res.status(201).json({ success: true, data: { callID: callID, callURL: uri } });
 
