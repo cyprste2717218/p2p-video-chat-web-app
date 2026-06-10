@@ -1,8 +1,8 @@
-const { Call, User } = require('../common/models');
+const { Call, User, CallParticipants } = require('../common/models');
 
 const Ajv = require('ajv');
 const addFormats = require("ajv-formats");
-const { createWebSocketsServer } = require('./utils/ws-server');
+const { createWebSocketsServer, shutDownServer } = require('./utils/ws-server');
 const { activeSessions } = require('./utils/session-store');
 const ajv = new Ajv();
 addFormats(ajv);
@@ -126,24 +126,70 @@ exports.leaveCall = async (req, res) => {
 			return res.status(400).json({ success: false, data: { error: 'No Call ID passed', details: validateCallParams.errors } });
 		}
 
+		const callID = req.params.callID;
+		const email = req.user.email;
 
 		// check if call ID exists
-
-
-		// given call exists, check if it is active
-
-		// if is active, but still at least one remaining participant just unlink requesting user from the call
-
-		// if is active, and user is last person to leave, set active status to false, update call duration,set finishTime to current time, close down websocket server associated with call
-
-
-
-		const requestedCallConfig = await activeSessions.get(req.params.callID);
-		if (!requestedCallConfig) {
+		const requestedCall = await Call.findByPk(callID);
+		if (!requestedCall) {
 			return res.status(404).json({ success: false, data: { error: 'Call ID not present' } });
 		}
 
-		const email = req.user.email;
+		// check if call is active
+		const isCallActive = requestedCall.activeCall;
+		if (!isCallActive) {
+			return res.status(400).json({ success: false, data: { error: 'Call is not active' } })
+		}
+
+		// check if requesting user exists
+		const retrievedUser = await User.findByPk(email);
+		if (retrievedUser === null) {
+			console.error(`User with email: ${email} not found in Users table`);
+			throw new Error("Error finding record for user joining call");
+		}
+
+		// check if user is logged as active participant on the call at present or if call has already finished
+		const isUserActiveOnCall = await CallParticipants.findOne({
+			where: {
+				CallCallID: callID,
+				UserEmail: email,
+				status: 'active'
+			}
+		});
+		const isCallFinished = requestedCall.finishedAt;
+
+		if (!isUserActiveOnCall | isCallFinished) {
+			res.status(403).json({ success: false, data: { error: 'Call is finished or user not an active participant' } })
+		}
+
+		const activeUserCount = await requestedCall.countUsers({
+			where: { status: 'active' }
+		});
+
+		// handle if more than one user on call remaining
+		if (activeUserCount > 1) {
+
+			await requestedCall.removeUser(retrievedUser);
+		} else {
+			// handle if user is last person to leave
+
+			const callFinishTime = Date.now();
+			const callStartTime = requestedCall.startedAt;
+			const callDurationSecs = (callFinishTime - callStartTime) / 1000;
+
+			await requestedCall.update({
+				activeCall: false,
+				totalDurationSecs: callDurationSecs,
+				finishedAt: callFinishTime
+			});
+
+			const isShutDownSuccess = await shutDownServer();
+			if (!isShutDownSuccess) {
+				console.error("Error shutting down requested ws server");
+			}
+		}
+
+		return res.status(200).json({ success: true, data: { message: 'User left call succesfully' } })
 
 	} catch (err) {
 		res.status(500).json({ success: false, data: { error: 'Server error' } });

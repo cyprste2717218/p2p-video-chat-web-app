@@ -73,3 +73,27 @@ exports.createWebSocketsServer = async () => {
 
 }
 
+exports.shutDownServer = async () => {
+	console.log('Shutting down WebSocket server...');
+
+	try {
+		wss.clients.forEach((client) => {
+			if (client.readyState === WebSocket.OPEN) {
+				client.close(1001, "Server is shutting down");
+
+			}
+		});
+
+		wss.close(() => {
+			console.log('WebSocket server is completely stopped.');
+		});
+
+		return true;
+
+	} catch (err) {
+		console.error("An error occurred shutting down the ws server:", err)
+		return false;
+	}
+
+}
+
