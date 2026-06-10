@@ -61,18 +61,13 @@ exports.createCall = async (req, res) => {
 			activeCall: false,
 		});
 
-
-
-		console.log(await newCall.getUsers())
 		newCall.addUser(retrievedUser);
-
-		// await retrievedUser.update({ callID: callID });
 
 		res.status(201).json({ success: true, data: { callID: callID, callURL: uri } });
 
 
 	} catch (err) {
-		console.error("This is th err:", err);
+		console.error("Error during call creation:", err);
 		res.status(500).json({ success: false, data: { error: 'Server error' } });
 	}
 
@@ -88,25 +83,29 @@ exports.joinCall = async (req, res) => {
 		}
 
 		// check if call ID exists
-		const retrievedCallConfig = await activeSessions.get(req.params.callID);
-		if (!retrievedCallConfig) {
+
+		const requestedCall = await Call.findByPk(req.params.callID);
+		if (!requestedCall) {
 			return res.status(404).json({ success: false, data: { error: 'Call ID not present' } });
 		}
 
-		// add pending participant (has to join WebSocket server) to in-memory config for current call
+
+
+		// Find the entry in 'users' table for user joining the call 
 		const email = req.user.email;
+		const retrievedUser = await User.findByPk(email);
+		if (retrievedUser === null) {
+			console.error(`User with email: ${email} not found in Users table`);
+			throw new Error("Error finding record for user joining call");
+		}
 
-
-		const pendingParticipants = retrievedCallConfig.pendingParticipants;
-		pendingParticipants.push(email);
+		// add pending participant (has to join WebSocket server) to in-memory config for current call
+		requestedCall.addUser(retrievedUser)
 
 		// retrieving the URL of the web socket server
-		const retrievedCallURL = retrievedCallConfig.wsURL;
+		const requestedCallURL = requestedCall.callURL;
 
-
-		console.log("activeSessions:", activeSessions);
-
-		return res.status(201).json({ success: true, data: { callURL: retrievedCallURL } });
+		return res.status(201).json({ success: true, data: { callURL: requestedCallURL } });
 
 
 	} catch (err) {
@@ -125,8 +124,8 @@ exports.leaveCall = async (req, res) => {
 		}
 
 		// check if call ID exists
-		const retrievedCallConfig = await activeSessions.get(req.params.callID);
-		if (!retrievedCallConfig) {
+		const requestedCallConfig = await activeSessions.get(req.params.callID);
+		if (!requestedCallConfig) {
 			return res.status(404).json({ success: false, data: { error: 'Call ID not present' } });
 		}
 
