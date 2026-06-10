@@ -26,7 +26,7 @@ exports.createWebSocketsServer = async () => {
 
 				const parsedMessage = JSON.parse(message);
 
-				const { type, data } = parsedMessage;
+				const { type, data, callID } = parsedMessage;
 
 				switch (type) {
 					case 'newParticipantOnCall':
@@ -73,18 +73,17 @@ exports.createWebSocketsServer = async () => {
 
 }
 
-exports.shutDownServer = async () => {
+exports.shutDownServer = async (callID) => {
 	console.log('Shutting down WebSocket server...');
 
 	try {
-		wss.clients.forEach((client) => {
+		wss.callID.clients.forEach((client) => {
 			if (client.readyState === WebSocket.OPEN) {
 				client.close(1001, "Server is shutting down");
-
 			}
 		});
 
-		wss.close(() => {
+		wss.callID.close(() => {
 			console.log('WebSocket server is completely stopped.');
 		});
 

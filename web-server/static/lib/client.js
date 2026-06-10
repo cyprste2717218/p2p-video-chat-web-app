@@ -150,6 +150,7 @@ async function establishWebSocketServerConn(callURL) {
 async function connectToCall() {
 
 	const enteredUsername = usernameInput.value;
+	const enteredEmail = emailInput.value;
 	const callID = document.getElementById("connect-to-call").value;
 
 	const joinCallButton = document.getElementById("connect-button");
@@ -158,9 +159,6 @@ async function connectToCall() {
 	try {
 		const result = await fetch(`http://localhost:3000/call/${callID}/join`, {
 			method: "PUT",
-			body: JSON.stringify({
-				username: enteredUsername
-			}),
 			headers: {
 				"Content-type": "application/json; charset=UTF-8"
 			}
@@ -199,7 +197,7 @@ async function connectToCall() {
 					const messagesToSend = [];
 					const msg1 = {
 						"type": "newParticipantOnCall",
-						"data": { username: enteredUsername, callID: callID }
+						"data": { username: enteredUsername, callID: callID, email: enteredEmail }
 					};
 					messagesToSend.push(msg1);
 

@@ -1,4 +1,5 @@
-const { wss, activeSessions } = require('./session-store');
+const { wss } = require('./session-store');
+const { CallParticipants } = require('../../common/models');
 
 exports.constructURI = (callID) => {
 
@@ -39,9 +40,9 @@ exports.sendMessageToParticipant = (targetParticipant, message) => {
 
 }
 
-exports.handleNewCallParticipantMsg = (data) => {
+exports.handleNewCallParticipantMsg = async (data) => {
 
-	const { username, callId } = data;
+	const { username, email, callID } = data;
 	console.log(`User ${username} connected to WebSocket server`);
 	const newParticipantNotif =
 	{
@@ -53,15 +54,24 @@ exports.handleNewCallParticipantMsg = (data) => {
 	broadcast(newParticipantNotif);
 
 	// Returning names of current call participants to new participant to establish connections
-	const joinedCall = activeSessions.get(callId);
-	console.log("the other participants on the call:", joinedCall);
-	const { participants, pendingParticipants } = joinedCall;
+	const activeUsers = await CallParticipants.findAll({
+		where: {
+			CallCallID: callID,
+			UserEmail: email,
+			status: 'active'
+		}
+	});
 
-	const totalParticipants = participants.length + pendingParticipants.length;
-	if (totalParticipants !== 1) {
+	if (activeUsers.length > 0) {
 
-		// filter out username from list of participants to connect to 
-		const otherCallParticipants = participants.filter((participant) => participant !== username);
+		console.log("the other participants on the call:", joinedCall);
+
+		// TO-DO: retrieve participant etaisl from db to send on
+		/* const { participants, pendingParticipants } = joinedCall;
+
+
+		// filter out email from list of participants to connect to 
+		const otherCallParticipants = participants.filter((participant) => participant !== email); */
 
 
 		const currentCallParticipantsMsg = JSON.stringify(
@@ -79,6 +89,10 @@ exports.handleNewCallParticipantMsg = (data) => {
 
 		return currentCallParticipantsMsg;
 	}
+
+
+
+
 }
 
 exports.handleOffer = (data) => {

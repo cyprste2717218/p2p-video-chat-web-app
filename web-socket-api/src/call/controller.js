@@ -3,7 +3,6 @@ const { Call, User, CallParticipants } = require('../common/models');
 const Ajv = require('ajv');
 const addFormats = require("ajv-formats");
 const { createWebSocketsServer, shutDownServer } = require('./utils/ws-server');
-const { activeSessions } = require('./utils/session-store');
 const ajv = new Ajv();
 addFormats(ajv);
 
@@ -183,7 +182,7 @@ exports.leaveCall = async (req, res) => {
 				finishedAt: callFinishTime
 			});
 
-			const isShutDownSuccess = await shutDownServer();
+			const isShutDownSuccess = await shutDownServer(callID);
 			if (!isShutDownSuccess) {
 				console.error("Error shutting down requested ws server");
 			}
