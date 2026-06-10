@@ -1,18 +1,6 @@
 const { DataTypes } = require('sequelize');
 
 const CallParticipantsModel = {
-	callID: {
-		type: DataTypes.UUID, references: {
-			model: 'calls',
-			key: 'callID'
-		}
-	},
-	email: {
-		type: DataTypes.STRING, references: {
-			model: 'users',
-			key: 'email'
-		}
-	},
 	status: {
 		type: DataTypes.TEXT,
 		allowNull: false,
@@ -22,6 +10,5 @@ const CallParticipantsModel = {
 		}
 	}
 };
-
 
 module.exports = (sequelize) => sequelize.define('callParticipants', CallParticipantsModel);
