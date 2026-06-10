@@ -34,7 +34,7 @@ exports.createWebSocketsServer = async () => {
 						// setting new username property on connection (websocket client) object directly for targeting specific messages
 						connection.username = data.username;
 
-						// getting return object to sendd to client
+						// getting return object to send to client
 						const currentCallParticipantsMsg = handleNewCallParticipantMsg(data);
 						connection.send(currentCallParticipantsMsg);
 						break;

@@ -291,11 +291,8 @@ async function createCall() {
 	createCallButton.textContent = "Creating Call...";
 
 	try {
-		const result = await fetch("http://192.168.0.60:3000/call/create", {
+		const result = await fetch("http://localhost:3000/call/create", {
 			method: "POST",
-			body: JSON.stringify({
-				username: enteredUsername
-			}),
 			headers: {
 				"Content-type": "application/json; charset=UTF-8"
 			}
