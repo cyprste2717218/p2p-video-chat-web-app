@@ -53,26 +53,37 @@ exports.handleNewCallParticipantMsg = async (data) => {
 
 	broadcast(newParticipantNotif);
 
+	// Update status of user from 'pending' to 'active' on the call
+	const currentCallParticipant = await CallParticipants.findOne({
+		where: {
+			CallCallID: callID,
+			UserEmail: email,
+		}
+	});
+
+	await currentCallParticipant.update({
+		status: 'active'
+	});
+
+
 	// Returning names of current call participants to new participant to establish connections
 	const activeUsers = await CallParticipants.findAll({
 		where: {
 			CallCallID: callID,
-			UserEmail: email,
 			status: 'active'
 		}
 	});
 
 	if (activeUsers.length > 0) {
 
-		console.log("the other participants on the call:", joinedCall);
+		console.log("the other participants on the call:", activeUsers);
+		const otherCallParticipants = [];
 
-		// TO-DO: retrieve participant etaisl from db to send on
-		/* const { participants, pendingParticipants } = joinedCall;
-
-
-		// filter out email from list of participants to connect to 
-		const otherCallParticipants = participants.filter((participant) => participant !== email); */
-
+		for (user in activeUsers) {
+			if (user.email !== email) {
+				otherCallParticipants.push(user.email);
+			}
+		}
 
 		const currentCallParticipantsMsg = JSON.stringify(
 			{
@@ -81,14 +92,15 @@ exports.handleNewCallParticipantMsg = async (data) => {
 			}
 		)
 
-
-
-		// TODO: handle update in-memory config of pending and current call participants
-		/* pendingParticipants.remove(username)
-		participants.push(username) */
-
 		return currentCallParticipantsMsg;
 	}
+
+	return JSON.stringify(
+		{
+			type: 'responseCurrentCallParticipants',
+			data: { participants: [] }
+		}
+	)
 
 
 
@@ -112,7 +124,7 @@ exports.handleOffer = (data) => {
 	sendMessageToParticipant(recipient, offerMessageToReceipient);
 }
 
-exports.setRandomPort = () => {
+exports.setRandomPort = async () => {
 	function generateRandomPort() {
 		return Math.floor(1000 + Math.random() * 9000);
 	}
@@ -122,13 +134,14 @@ exports.setRandomPort = () => {
 		// checking new port does not conflict with existing WS server
 		const generatedPort = generateRandomPort();
 
-
-		if (activeSessions.size > 0) {
-			const activelyUsedPorts = [...activeSessions.keys()];
-			const portsSet = new Set(activelyUsedPorts);
-			if (portsSet.has(generatedPort)) {
-				throw new Error("Generated port number already in use");
+		const isURLTaken = await Call.findOne({
+			where: {
+				callURL: `ws://localhost:${generatedPort}`
 			}
+		});
+
+		if (isURLTaken) {
+			throw new Error("Generated port number already in use");
 		}
 
 		randomPort = generatedPort;

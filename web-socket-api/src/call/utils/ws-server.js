@@ -10,7 +10,7 @@ exports.createWebSocketsServer = async () => {
 	const callID = uuid.v4();
 
 	//creating a websocket server at random port 
-	const portNum = setRandomPort();
+	const portNum = await setRandomPort();
 	console.log("Port Number:", portNum);
 
 
