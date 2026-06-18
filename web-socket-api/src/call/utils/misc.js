@@ -1,5 +1,5 @@
 const { wss } = require('./session-store');
-const { CallParticipants } = require('../../common/models');
+const { CallParticipants, Call } = require('../../common/models');
 
 exports.constructURI = (callID) => {
 
