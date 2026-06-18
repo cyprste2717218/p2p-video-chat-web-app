@@ -7,6 +7,68 @@ const { wss } = require('./session-store');
 
 exports.createWebSocketsServer = async () => {
 
+	const handleServerMessages = async (activeWSS) => {
+		try {
+			activeWSS.on('connection', function (connection) {
+
+				//when server gets a message from a connected user 
+				connection.on('message', function (message) {
+
+					let parsedMessage, type, data;
+
+					try {
+						parsedMessage = JSON.parse(message);
+					} catch (err) {
+						console.error("Couldn't parse message from stringified JSON");
+					}
+
+					if (!parsedMessage) {
+						type = "unnaccepted message type";
+					} else {
+						type = parsedMessage.type;
+						data = parsedMessage.data;
+					}
+
+					switch (type) {
+						case 'newParticipantOnCall':
+
+							// setting new username property on connection (websocket client) object directly for targeting specific messages
+							connection.username = data.username;
+
+							// getting return object to send to client
+							const currentCallParticipantsMsg = handleNewCallParticipantMsg(data);
+							connection.send(currentCallParticipantsMsg);
+							break;
+						case 'chatMessage':
+							const newChatMessage =
+							{
+								type: 'receivedNewChatMessage',
+								data: { message: data.message }
+							}
+
+
+							broadcast(newChatMessage);
+							break;
+						case 'offer':
+
+							handleOffer(data);
+							break;
+						default:
+							console.log("message of unrecognised type sent:", type);
+
+
+					}
+				});
+
+			});
+		} catch (err) {
+			console.error("An error occurred:", err);
+			throw err;
+		}
+
+
+	}
+
 	const callID = uuid.v4();
 
 	//creating a websocket server at random port 
@@ -15,51 +77,11 @@ exports.createWebSocketsServer = async () => {
 
 
 	try {
-		wss.callID = new WebSocketServer({ port: portNum });
 
+		wss.callID = new WebSocketServer({ port: portNum });
 		const activeWSS = wss.callID;
 
-		activeWSS.on('connection', function (connection) {
-
-			//when server gets a message from a connected user 
-			connection.on('message', function (message) {
-
-				const parsedMessage = JSON.parse(message);
-
-				const { type, data, callID } = parsedMessage;
-
-				switch (type) {
-					case 'newParticipantOnCall':
-
-						// setting new username property on connection (websocket client) object directly for targeting specific messages
-						connection.username = data.username;
-
-						// getting return object to send to client
-						const currentCallParticipantsMsg = handleNewCallParticipantMsg(data);
-						connection.send(currentCallParticipantsMsg);
-						break;
-					case 'chatMessage':
-						const newChatMessage =
-						{
-							type: 'receivedNewChatMessage',
-							data: { message: data.message }
-						}
-
-
-						broadcast(newChatMessage);
-						break;
-					case 'offer':
-
-						handleOffer(data);
-						break;
-					default:
-						console.log("message of unrecognised type sent:", type);
-
-
-				}
-			});
-
-		});
+		await handleServerMessages(activeWSS);
 
 		const uri = constructURI(callID);
 		return { callID, uri };
