@@ -1,49 +1,49 @@
 //require our websocket library 
-var WebSocketServer = require('ws').Server;
-const uuid = require('uuid');
-const { handleOffer, handleNewCallParticipantMsg, broadcast, constructURI, setRandomPort } = require('./misc');
-const { wss } = require('./session-store');
+var WebSocketServer=require('ws').Server;
+const uuid=require('uuid');
+const {handleOffer,handleNewCallParticipantMsg,broadcast,constructURI,setRandomPort}=require('./misc');
+const {wss}=require('./session-store');
 
 
-exports.createWebSocketsServer = async () => {
+exports.createWebSocketsServer=async () => {
 
-	const handleServerMessages = async (activeWSS) => {
+	const handleServerMessages=async (activeWSS) => {
 		try {
-			activeWSS.on('connection', function (connection) {
+			activeWSS.on('connection',function(connection) {
 
 				//when server gets a message from a connected user 
-				connection.on('message', function (message) {
+				connection.on('message',async function(message) {
 
-					let parsedMessage, type, data;
+					let parsedMessage,type,data;
 
 					try {
-						parsedMessage = JSON.parse(message);
+						parsedMessage=JSON.parse(message);
 					} catch (err) {
 						console.error("Couldn't parse message from stringified JSON");
 					}
 
 					if (!parsedMessage) {
-						type = "unnaccepted message type";
+						type="unnaccepted message type";
 					} else {
-						type = parsedMessage.type;
-						data = parsedMessage.data;
+						type=parsedMessage.type;
+						data=parsedMessage.data;
 					}
 
 					switch (type) {
 						case 'newParticipantOnCall':
 
-							// setting new username property on connection (websocket client) object directly for targeting specific messages
-							connection.username = data.username;
+							// setting new email property on connection (websocket client) object directly for targeting specific messages
+							connection.email=data.email;
 
 							// getting return object to send to client
-							const currentCallParticipantsMsg = handleNewCallParticipantMsg(data);
+							const currentCallParticipantsMsg=await handleNewCallParticipantMsg(data);
 							connection.send(currentCallParticipantsMsg);
 							break;
 						case 'chatMessage':
-							const newChatMessage =
+							const newChatMessage=
 							{
 								type: 'receivedNewChatMessage',
-								data: { message: data.message }
+								data: {message: data.message}
 							}
 
 
@@ -54,7 +54,7 @@ exports.createWebSocketsServer = async () => {
 							handleOffer(data);
 							break;
 						default:
-							console.log("message of unrecognised type sent:", type);
+							console.log("message of unrecognised type sent:",type);
 
 
 					}
@@ -62,46 +62,46 @@ exports.createWebSocketsServer = async () => {
 
 			});
 		} catch (err) {
-			console.error("An error occurred:", err);
+			console.error("An error occurred:",err);
 			throw err;
 		}
 
 
 	}
 
-	const callID = uuid.v4();
+	const callID=uuid.v4();
 
 	//creating a websocket server at random port 
-	const portNum = await setRandomPort();
-	console.log("Port Number:", portNum);
+	const portNum=await setRandomPort();
+	console.log("Port Number:",portNum);
 
 
 	try {
 
-		wss.callID = new WebSocketServer({ port: portNum });
-		const activeWSS = wss.callID;
+		wss.callID=new WebSocketServer({port: portNum});
+		const activeWSS=wss.callID;
 
 		await handleServerMessages(activeWSS);
 
-		const uri = constructURI(callID);
-		return { callID, uri };
+		const uri=constructURI(callID);
+		return {callID,uri};
 
 	} catch (err) {
-		console.error("This is the error:", err);
-		throw new Error("Error creating WebSockets Server:", err);
+		console.error("This is the error:",err);
+		throw new Error("Error creating WebSockets Server:",err);
 	}
 
 
 
 }
 
-exports.shutDownServer = async (callID) => {
+exports.shutDownServer=async (callID) => {
 	console.log('Shutting down WebSocket server...');
 
 	try {
 		wss.callID.clients.forEach((client) => {
-			if (client.readyState === WebSocket.OPEN) {
-				client.close(1001, "Server is shutting down");
+			if (client.readyState===WebSocket.OPEN) {
+				client.close(1001,"Server is shutting down");
 			}
 		});
 
@@ -112,7 +112,7 @@ exports.shutDownServer = async (callID) => {
 		return true;
 
 	} catch (err) {
-		console.error("An error occurred shutting down the ws server:", err)
+		console.error("An error occurred shutting down the ws server:",err)
 		return false;
 	}
 

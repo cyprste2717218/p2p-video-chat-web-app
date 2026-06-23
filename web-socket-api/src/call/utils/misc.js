@@ -1,60 +1,68 @@
-const { wss } = require('./session-store');
-const { CallParticipants, Call } = require('../../common/models');
+const {wss}=require('./session-store');
+const {CallParticipants,Call}=require('../../common/models');
 
-exports.constructURI = (callID) => {
+exports.constructURI=(callID) => {
 
 	// constructing URI of WS server created
-	const relevantWSS = wss.callID;
-	const addressInfo = relevantWSS.address();
+	const relevantWSS=wss.callID;
+	const addressInfo=relevantWSS.address();
 
-	const host = addressInfo.address === '::' ? 'localhost' : addressInfo.address;
-	const port = addressInfo.port;
+	const host=addressInfo.address==='::'? 'localhost':addressInfo.address;
+	const port=addressInfo.port;
 
-	const uri = `ws://${host}:${port}`;
+	const uri=`ws://${host}:${port}`;
 
 	return uri;
 }
 
-exports.broadcast = (message) => {
-	wss.clients.forEach((client) => {
-		// Check if the connection is fully open
-		if (client.readyState === 1) {
-			client.send(JSON.stringify(message));
-		}
-	});
+exports.broadcast=(message) => {
+	if (wss.clients) {
+		wss.clients.forEach((client) => {
+			// Check if the connection is fully open
+			if (client.readyState===1) {
+				client.send(JSON.stringify(message));
+			}
+		});
+	}
+
 }
 
-exports.sendMessageToParticipant = (targetParticipant, message) => {
+exports.sendMessageToParticipant=(targetParticipant,message) => {
 	try {
-		const participant = Array.from(wss.clients).find(client => client.username === targetParticipant);
 
-		if (!(participant && participant.readyState === 1)) {
-			throw new Error("Unable to find participant or participant ws connection not open");
+		if (wss.clients) {
+			const participant=Array.from(wss.clients).find(client => client.username===targetParticipant);
+			if (!(participant&&participant.readyState===1)) {
+				throw new Error("Unable to find participant or participant ws connection not open");
+			}
+			participant.send(JSON.stringify(message));
 		}
-		participant.send(JSON.stringify(message));
+
+
 
 	} catch (err) {
-		console.error("Error occurred sending message to websocket client:", err);
+		console.error("Error occurred sending message to websocket client:",err);
 	}
 
 
 }
 
-exports.handleNewCallParticipantMsg = async (data) => {
+exports.handleNewCallParticipantMsg=async (data) => {
 
-	const { username, email, callID } = data;
+	const {username,email,callID}=data;
+	console.log("New Participant joined:",username,email,callID);
 	console.log(`User ${username} connected to WebSocket server`);
-	const newParticipantNotif =
+	const newParticipantNotif=
 	{
 		type: 'receivedNewParticipantNotif',
-		data: { message: `${username} joined chat` }
+		data: {message: `${username} joined chat`}
 	}
 
 
-	broadcast(newParticipantNotif);
+	exports.broadcast(newParticipantNotif);
 
 	// Update status of user from 'pending' to 'active' on the call
-	const currentCallParticipant = await CallParticipants.findOne({
+	const currentCallParticipant=await CallParticipants.findOne({
 		where: {
 			CallCallID: callID,
 			UserEmail: email,
@@ -67,28 +75,28 @@ exports.handleNewCallParticipantMsg = async (data) => {
 
 
 	// Returning names of current call participants to new participant to establish connections
-	const activeUsers = await CallParticipants.findAll({
+	const activeUsers=await CallParticipants.findAll({
 		where: {
 			CallCallID: callID,
 			status: 'active'
 		}
 	});
 
-	if (activeUsers.length > 0) {
+	if (activeUsers.length>0) {
 
-		console.log("the other participants on the call:", activeUsers);
-		const otherCallParticipants = [];
+		console.log("the other participants on the call:",activeUsers);
+		const otherCallParticipants=[];
 
 		for (user in activeUsers) {
-			if (user.email !== email) {
+			if (user.email!==email) {
 				otherCallParticipants.push(user.email);
 			}
 		}
 
-		const currentCallParticipantsMsg = JSON.stringify(
+		const currentCallParticipantsMsg=JSON.stringify(
 			{
 				type: 'responseCurrentCallParticipants',
-				data: { participants: otherCallParticipants }
+				data: {participants: otherCallParticipants}
 			}
 		)
 
@@ -98,7 +106,7 @@ exports.handleNewCallParticipantMsg = async (data) => {
 	return JSON.stringify(
 		{
 			type: 'responseCurrentCallParticipants',
-			data: { participants: [] }
+			data: {participants: []}
 		}
 	)
 
@@ -107,12 +115,12 @@ exports.handleNewCallParticipantMsg = async (data) => {
 
 }
 
-exports.handleOffer = (data) => {
-	const { caller, recipient, offer } = data;
+exports.handleOffer=(data) => {
+	const {caller,recipient,offer}=data;
 	console.log(`User ${caller} sent offer to ${recipient}`);
 
 	// prepare message format to return to intended recipient
-	const offerMessageToReceipient = {
+	const offerMessageToReceipient={
 		type: 'offer',
 		data: {
 			caller: caller,
@@ -121,20 +129,20 @@ exports.handleOffer = (data) => {
 		}
 	}
 
-	sendMessageToParticipant(recipient, offerMessageToReceipient);
+	exports.sendMessageToParticipant(recipient,offerMessageToReceipient);
 }
 
-exports.setRandomPort = async () => {
+exports.setRandomPort=async () => {
 	function generateRandomPort() {
-		return Math.floor(1000 + Math.random() * 9000);
+		return Math.floor(1000+Math.random()*9000);
 	}
 
 	let randomPort;
 	try {
 		// checking new port does not conflict with existing WS server
-		const generatedPort = generateRandomPort();
+		const generatedPort=generateRandomPort();
 
-		const isURLTaken = await Call.findOne({
+		const isURLTaken=await Call.findOne({
 			where: {
 				callURL: `ws://localhost:${generatedPort}`
 			}
@@ -144,15 +152,15 @@ exports.setRandomPort = async () => {
 			throw new Error("Generated port number already in use");
 		}
 
-		randomPort = generatedPort;
+		randomPort=generatedPort;
 
 	} catch (err) {
-		if (err !== "Generated port number already in use") {
+		if (err!=="Generated port number already in use") {
 			throw new Error(err);
 		}
 
-		const portNum = setRandomPort();
-		randomPort = portNum;
+		const portNum=setRandomPort();
+		randomPort=portNum;
 
 	}
 

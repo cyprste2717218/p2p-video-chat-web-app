@@ -1,3 +1,4 @@
+
 export class TokenService {
 	#token=null;
 
@@ -14,34 +15,34 @@ export class TokenService {
 	}
 }
 
-const tokenService=TokenService();
+const tokenService=new TokenService();
 
 onmessage=async function(event) {
-
+	console.log("triggered the token worker");
 	const {messageType,requestBody}=event.data;
 
 	switch (messageType) {
-		case 'login':
+		case 'ReqLogin':
 			const loginResult=await handleLogin(requestBody);
 			postMessage(loginResult);
 			break;
-		case 'signup':
+		case 'ReqSignup':
 			const signUpResult=await handleRegister(requestBody);
 			postMessage(signUpResult);
 			break;
-		case 'logout':
+		case 'ReqLogout':
 			const logoutResult=await handleLogout();
 			postMessage(logoutResult);
 			break;
-		case 'createCall':
+		case 'ReqCreateCall':
 			const createCallResult=await handleCreateCall();
 			postMessage(createCallResult);
 			break;
-		case 'joinCall':
+		case 'ReqJoinCall':
 			const joinCallResult=await handleJoinCall();
 			postMessage(joinCallResult);
 			break;
-		case 'leaveCall':
+		case 'ReqLeaveCall':
 			const leaveCallResult=await handleLeaveCall();
 			postMessage(leaveCallResult);
 			break;
@@ -50,7 +51,7 @@ onmessage=async function(event) {
 
 async function handleLogin(requestBody) {
 
-	const resultMessage={message: ""};
+	const resultMessage={message: "",type: "ResLogin"};
 
 	const result=await fetch(`http://localhost:3000/login`,{
 		method: "POST",
@@ -66,6 +67,7 @@ async function handleLogin(requestBody) {
 		const {success,data}=dataBody;
 
 		if (!success) {
+			console.log("Error in handleLogin:",data);
 			resultMessage.message="Login failed";
 			return resultMessage;
 		}
@@ -85,7 +87,7 @@ async function handleLogin(requestBody) {
 
 async function handleRegister(requestBody) {
 
-	const resultMessage={message: ""};
+	const resultMessage={message: "",type: "ResSignup"};
 
 	const result=await fetch(`http://localhost:3000/signup`,{
 		method: "POST",
@@ -115,7 +117,7 @@ async function handleRegister(requestBody) {
 
 async function handleLogout() {
 
-	const resultMessage={message: ""};
+	const resultMessage={message: "",type: "ResLogout"};
 
 	const result=await fetch(`http://localhost:3000/logout`,{
 		method: "POST",
@@ -149,7 +151,7 @@ async function handleLogout() {
 async function handleCreateCall() {
 
 
-	const resultMessage={message: ""};
+	const resultMessage={message: "",type: "ResCreateCall"};
 
 	const result=await fetch("http://localhost:3000/call/create",{
 		method: "POST",
@@ -182,9 +184,10 @@ async function handleCreateCall() {
 
 }
 
-async function handleJoinCall() {
+async function handleJoinCall(requestBody) {
 
-	const resultMessage={message: ""};
+	const resultMessage={message: "",type: "ResJoinCall"};
+	const callID=requestBody;
 
 	const result=await fetch(`http://localhost:3000/call/${callID}/join`,{
 		method: "PUT",
@@ -200,14 +203,14 @@ async function handleJoinCall() {
 		const {success,data}=dataBody;
 
 		if (!success) {
-			resultMessage.message="Create new call failed";
+			resultMessage.message="Join new call failed";
 			return resultMessage;
 		}
 
 		const {callURL}=data;
 		resultMessage.message=callURL;
 	} else {
-		resultMessage.message="Create new call failed";
+		resultMessage.message="Join new call failed";
 	}
 
 	return resultMessage;

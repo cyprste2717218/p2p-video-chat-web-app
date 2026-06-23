@@ -1,5 +1,4 @@
 import {getLocalMedia,sendOffer} from "./rtcUtils.js";
-import {TokenService} from "./token-worker.js";
 
 const connectToCallButton=document.getElementById("connect-button");
 connectToCallButton.addEventListener("click",connectToCall);
@@ -25,41 +24,49 @@ const passwordInput=document.getElementById("password");
 
 
 let websocket;
+const tokenWorker=new Worker('../token-worker.js',{type: "module"});
+
+async function getWorkerResponse(messageReqType,messageResType,requestBody) {
+	console.log("GetWorkerResponse triggered:",messageReqType,messageResType,requestBody);
+	return new Promise((resolve,reject) => {
+
+		tokenWorker.onmessage=function(event) {
+			if (event.data.type===`${messageResType}`) {
+				console.log("Received resType of:",event.data.type);
+				resolve(event.data.message);
+			}
+			reject("Receieved improper message response type back:",event.data.type);
+		};
+
+		tokenWorker.postMessage({messageType: messageReqType,requestBody: requestBody});
+	});
+}
 
 async function register() {
 
 	try {
 
 		registerButton.textContent="Registering...";
-		const result=await fetch(`http://localhost:3000/signup`,{
-			method: "POST",
-			body: JSON.stringify({
-				username: usernameInput.value,
-				email: emailInput.value,
-				password: passwordInput.value
-			}),
-			headers: {
-				"Content-type": "application/json; charset=UTF-8"
-			}
-		});
-
-		if (result.ok) {
-			const dataBody=await result.json();
-
-			console.log("result",dataBody);
-			const {success,data}=dataBody;
-
-			if (!success) {
-				alert("Signup failed");
-				throw new Error("Signup failed");
-			}
-
-			connectToCallButton.disabled=false;
-			createCallButton.disabled=false;
-			registerButton.textContent="Register";
-
-			alert("Succesful sign up!");
+		const signUpBody={
+			username: usernameInput.value,
+			email: emailInput.value,
+			password: passwordInput.value
 		}
+
+		const result=await getWorkerResponse("ReqSignup","ResSignup",signUpBody);
+
+		if (result==="Signup failed") {
+			alert(result);
+			throw new Error(result);
+		}
+
+		connectToCallButton.disabled=false;
+		createCallButton.disabled=false;
+		registerButton.disabled=true;
+		registerButton.textContent="Register";
+
+		alert(result);
+
 
 	} catch (err) {
 		registerButton.textContent="Register";
@@ -71,39 +78,27 @@ async function login() {
 	try {
 
 		loginButton.textContent="Logging in...";
-		const result=await fetch(`http://localhost:3000/login`,{
-			method: "POST",
-			body: JSON.stringify({
-				username: usernameInput.value,
-				email: emailInput.value,
-				password: passwordInput.value
-			}),
-			headers: {
-				"Content-type": "application/json; charset=UTF-8",
-			}
-		});
 
-		if (result.ok) {
-			const dataBody=await result.json();
-
-			console.log("result",dataBody);
-			const {success,data}=dataBody;
-
-			if (!success) {
-				alert("Login failed");
-				throw new Error("Login failed");
-			}
-
-			const {token}=data;
-			tokenService.setToken(token);
-
-
-			connectToCallButton.disabled=false;
-			createCallButton.disabled=false;
-			loginButton.textContent="Login";
-
-			alert("Succesful login!");
+		const loginBody={
+			username: usernameInput.value,
+			email: emailInput.value,
+			password: passwordInput.value
 		}
+
+		const result=await getWorkerResponse("ReqLogin","ResLogin",loginBody);
+
+		if (result==="Login failed") {
+			alert(result);
+			throw new Error(result);
+		}
+
+		connectToCallButton.disabled=false;
+		createCallButton.disabled=false;
+		loginButton.disabled=true;
+		loginButton.textContent="Login";
+
+		alert(result);
+
 
 	} catch (err) {
 		loginButton.textContent="Login";
@@ -115,32 +110,21 @@ async function logout() {
 	try {
 
 		logoutButton.textContent="Logging out...";
-		tokenService.clearToken();
-		const result=await fetch(`http://localhost:3000/logout`,{
-			method: "POST",
-			headers: {
-				"Content-type": "application/json; charset=UTF-8",
-				"Authorization": `Bearer ${tokenService.getToken()}`
-			}
-		});
 
-		if (result.ok) {
-			const dataBody=await result.json();
+		const result=await getWorkerResponse("ReqLogout","ResLogout");
 
-			console.log("result",dataBody);
-			const {success,data}=dataBody;
-
-			if (!success) {
-				alert("Logout failed");
-				throw new Error("Logout failed");
-			}
-
-			joinCallButton.disabled=false;
-			createCallButton.disabled=false;
-			logoutButton.textContent="Logout";
-
-			alert("Logged out!");
+		if (result==="Logout failed") {
+			alert(result);
+			throw new Error(result);
 		}
+
+		joinCallButton.disabled=false;
+		createCallButton.disabled=false;
+		logoutButton.disabled=true;
+		logoutButton.textContent="Logout";
+
+		alert(result);
+
 
 	} catch (err) {
 		logoutButton.textContent="Logout";
@@ -164,122 +148,106 @@ async function connectToCall() {
 	joinCallButton.textContent="Joining Call...";
 
 	try {
-		const result=await fetch(`http://localhost:3000/call/${callID}/join`,{
-			method: "PUT",
-			headers: {
-				"Content-type": "application/json; charset=UTF-8",
-				"Authorization": `Bearer ${tokenService.getToken()}`
-			}
-		});
+		const result=await getWorkerResponse("ReqJoinCall","ResJoinCall",callID);
 
-		if (result.ok) {
-			const dataBody=await result.json();
+		if (result==="Join new call failed") {
+			alert(result);
+			throw new Error(result);
+		}
 
-			console.log("result",dataBody);
-			const {success,data}=dataBody;
+		const callURL=result;
 
-			if (!success) {
-				joinCallButton.textContent="Join Call";
-				throw new Error("Create new call failed");
-			}
+		// fetch and display local video 
+		await getLocalMedia();
 
-			const {callURL}=data;
+		// establish connection to websocket server created
+		await establishWebSocketServerConn(callURL);
 
-			// fetch and display local video 
-			await getLocalMedia();
+		// display currrent call ID connected to in UI
+		const currentcallIDDisplay=document.getElementById("current-call-id-display");
+		currentcallIDDisplay.textContent=callID;
 
-			// establish connection to websocket server created
-			await establishWebSocketServerConn(callURL);
+		// reset join call button to default text after connection established
+		joinCallButton.textContent="Join Call";
 
-			// display currrent call ID connected to in UI
-			const currentcallIDDisplay=document.getElementById("current-call-id-display");
-			currentcallIDDisplay.textContent=callID;
+		if (websocket) {
+			websocket.addEventListener("open",() => {
 
-			// reset join call button to default text after connection established
-			joinCallButton.textContent="Join Call";
-
-			if (websocket) {
-				websocket.addEventListener("open",() => {
-
-					console.log("Established websocket server connection succesfully");
-					const messagesToSend=[];
-					const msg1={
-						"type": "newParticipantOnCall",
-						"data": {username: enteredUsername,callID: callID,email: enteredEmail}
-					};
-					messagesToSend.push(msg1);
+				console.log("Established websocket server connection succesfully");
+				const messagesToSend=[];
+				const msg1={
+					"type": "newParticipantOnCall",
+					"data": {username: enteredUsername,callID: callID,email: enteredEmail}
+				};
+				messagesToSend.push(msg1);
 
 
-					messagesToSend.map((message) => {
-						websocket.send(JSON.stringify(message));
-					});
-
-
+				messagesToSend.map((message) => {
+					websocket.send(JSON.stringify(message));
 				});
 
 
-				// respond to messages from ws server
-				websocket.addEventListener("message",(e) => {
-					console.log("Received new message:",e.data);
-					const message=JSON.parse(e.data);
-
-					const {type,data}=message;
-
-					switch (type) {
-						case 'receivedNewParticipantNotif':
-						case 'chatMessage':
-
-							const chatMessage=data.message;
+			});
 
 
-							// update DOM with message on new chat participant joining and/or new chat message
-							const chatMessagesContainer=document.getElementById('chat-messages');
+			// respond to messages from ws server
+			websocket.addEventListener("message",(e) => {
+				console.log("Received new message:",e.data);
+				const message=JSON.parse(e.data);
+
+				const {type,data}=message;
+
+				switch (type) {
+					case 'receivedNewParticipantNotif':
+					case 'chatMessage':
+
+						const chatMessage=data.message;
+
+
+						// update DOM with message on new chat participant joining and/or new chat message
+						const chatMessagesContainer=document.getElementById('chat-messages');
+						const newPara=document.createElement('p');
+
+						newPara.textContent=chatMessage;
+						chatMessagesContainer.appendChild(newPara);
+
+						break;
+
+					case 'responseCurrentCallParticipants':
+						const otherCallParticipants=data.participants;
+						const callerText=document.getElementById("username").value;
+
+						console.log("other call participants receieved:",otherCallParticipants);
+
+						otherCallParticipants.forEach(participant => {
+							const createdOffer=sendOffer(callerText,participant);
+							websocket.send(JSON.stringify(createdOffer))
+						});
+
+						// Update DOM to display current participants on call being joined
+						const currentParticipantsContainer=document.getElementById('call-participants-list');
+
+						otherCallParticipants.map((participantName) => {
 							const newPara=document.createElement('p');
 
-							newPara.textContent=chatMessage;
-							chatMessagesContainer.appendChild(newPara);
+							newPara.textContent=participantName;
 
-							break;
+							currentParticipantsContainer.appendChild(newPara);
+						})
 
-						case 'responseCurrentCallParticipants':
-							const otherCallParticipants=data.participants;
-							const callerText=document.getElementById("username").value;
+						break;
 
-							console.log("other call participants receieved:",otherCallParticipants);
+					case 'offer':
+						const {caller,recipient,offer}=data;
+						console.log(`Received offer message from user ${caller} `);
 
-							otherCallParticipants.forEach(participant => {
-								const createdOffer=sendOffer(callerText,participant);
-								websocket.send(JSON.stringify(createdOffer))
-							});
-
-							// Update DOM to display current participants on call being joined
-							const currentParticipantsContainer=document.getElementById('call-participants-list');
-
-							otherCallParticipants.map((participantName) => {
-								const newPara=document.createElement('p');
-
-								newPara.textContent=participantName;
-
-								currentParticipantsContainer.appendChild(newPara);
-							})
-
-							break;
-
-						case 'offer':
-							const {caller,recipient,offer}=data;
-							console.log(`Received offer message from user ${caller}`);
-
-							break;
-					}
-				})
-
-
-			}
-
-
+						break;
+				}
+			})
 
 
 		}
+
 
 	} catch (err) {
 		joinCallButton.textContent="Join Call";
@@ -294,118 +262,105 @@ function hangUpCall() {
 async function createCall() {
 
 	const enteredUsername=document.getElementById("username").value;
+	const enteredEmail=emailInput.value;
 
 	const createCallButton=document.getElementById("create-call-button");
 	createCallButton.textContent="Creating Call...";
 
 	try {
-		const result=await fetch("http://localhost:3000/call/create",{
-			method: "POST",
-			headers: {
-				"Content-type": "application/json; charset=UTF-8",
-				"Authorization": `Bearer ${tokenService.getToken()}`
-			}
-		});
 
-		if (result.ok) {
+		const result=await getWorkerResponse("ReqCreateCall","ResCreateCall");
 
-			const dataBody=await result.json();
-
-			console.log("result",dataBody);
-			const {success,data}=dataBody;
-
-
-			if (!success) {
-				createCallButton.textContent="Create Call";
-				throw new Error("Create new call failed");
-			}
-
-			const {callID,callURL}=data;
-
-			const currentcallIDDisplay=document.getElementById("current-call-id-display");
-			currentcallIDDisplay.textContent=callID;
-
+		if (result==="Create new call failed") {
 			createCallButton.textContent="Create Call";
+			alert(result);
+			throw new Error(result);
+		}
 
-			// fetch and display local video 
-			await getLocalMedia();
+		const {callID,callURL}=result;
 
-			// establish connection to websocket server created
-			await establishWebSocketServerConn(callURL);
+		const currentcallIDDisplay=document.getElementById("current-call-id-display");
+		currentcallIDDisplay.textContent=callID;
 
-			if (websocket) {
-				websocket.addEventListener("open",() => {
+		createCallButton.textContent="Create Call";
 
-					console.log("Established websocket server connection succesfully");
-					const messagesToSend=[];
-					const msg1={
-						"type": "newParticipantOnCall",
-						"data": {username: enteredUsername,callID: callID}
-					};
-					messagesToSend.push(msg1);
+		// fetch and display local video 
+		await getLocalMedia();
+
+		// establish connection to websocket server created
+		await establishWebSocketServerConn(callURL);
+
+		if (websocket) {
+			websocket.addEventListener("open",() => {
+
+				console.log("Established websocket server connection succesfully");
+				const messagesToSend=[];
+				const msg1={
+					"type": "newParticipantOnCall",
+					"data": {username: enteredUsername,email: enteredEmail,callID: callID}
+				};
+				messagesToSend.push(msg1);
 
 
-					messagesToSend.map((message) => {
-						websocket.send(JSON.stringify(message));
-					});
-
-
+				messagesToSend.map((message) => {
+					websocket.send(JSON.stringify(message));
 				});
 
 
-				// respond to messages from ws server
-				websocket.addEventListener("message",(e) => {
-					console.log("Received new message:",e.data);
-					const message=JSON.parse(e.data);
-
-					const {type,data}=message;
-
-					switch (type) {
-						case 'receivedNewParticipantNotif':
-						case 'chatMessage':
-
-							const chatMessage=data.message;
+			});
 
 
-							// update DOM with message on new chat participant joining and/or new chat message
-							const chatMessagesContainer=document.getElementById('chat-messages');
+			// respond to messages from ws server
+			websocket.addEventListener("message",(e) => {
+				console.log("Received new message:",e.data);
+				const message=JSON.parse(e.data);
+
+				const {type,data}=message;
+
+				switch (type) {
+					case 'receivedNewParticipantNotif':
+					case 'chatMessage':
+
+						const chatMessage=data.message;
+
+
+						// update DOM with message on new chat participant joining and/or new chat message
+						const chatMessagesContainer=document.getElementById('chat-messages');
+						const newPara=document.createElement('p');
+
+						newPara.textContent=chatMessage;
+						chatMessagesContainer.appendChild(newPara);
+
+						break;
+					case 'responseCurrentCallParticipants':
+						const otherCallParticipants=data.participants;
+						const callerText=document.getElementById("username").value;
+
+						otherCallParticipants.forEach(participant => {
+							const createdOffer=sendOffer(callerText,participant);
+							websocket.send(JSON.stringify(createdOffer))
+						});
+
+						// Update DOM to display current participants on call being joined
+						const currentParticipantsContainer=document.getElementById('call-participants-list');
+
+						otherCallParticipants.map((participantName) => {
 							const newPara=document.createElement('p');
 
-							newPara.textContent=chatMessage;
-							chatMessagesContainer.appendChild(newPara);
+							newPara.textContent=participantName;
 
-							break;
-						case 'responseCurrentCallParticipants':
-							const otherCallParticipants=data.participants;
-							const callerText=document.getElementById("username").value;
+							currentParticipantsContainer.appendChild(newPara);
+						})
 
-							otherCallParticipants.forEach(participant => {
-								const createdOffer=sendOffer(callerText,participant);
-								websocket.send(JSON.stringify(createdOffer))
-							});
+						break;
+					case 'offer':
+						const {caller,recipient,offer}=data;
+						console.log(`Received offer message from user ${caller} `);
 
-							// Update DOM to display current participants on call being joined
-							const currentParticipantsContainer=document.getElementById('my-container');
+						break;
+				}
+			})
 
-							otherCallParticipants.map((participantName) => {
-								const newPara=document.createElement('p');
-
-								newPara.textContent=participantName;
-
-								currentParticipantsContainer.appendChild(newPara);
-							})
-
-							break;
-						case 'offer':
-							const {caller,recipient,offer}=data;
-							console.log(`Received offer message from user ${caller}`);
-
-							break;
-					}
-				})
-
-
-			}
 
 		}
 

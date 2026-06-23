@@ -5,7 +5,7 @@
   "main": "other.js",
   "scripts": {
     "run-video-chat-frontend": "cd web-server && node server.js",
-    "run-signalling-api": "cd web-socket-api && node --env-file=.env app.js",
+    "run-signalling-api": "cd web-socket-api/src && node --env-file=.env app.js",
     "test": "xo",
     "prepare": "husky install"
   },
