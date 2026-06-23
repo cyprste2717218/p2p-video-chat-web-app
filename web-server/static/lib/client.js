@@ -1,26 +1,27 @@
-import { getLocalMedia, sendOffer } from "./rtcUtils.js";
+import {getLocalMedia,sendOffer} from "./rtcUtils.js";
+import {TokenService} from "./token-worker.js";
 
-const connectToCallButton = document.getElementById("connect-button");
-connectToCallButton.addEventListener("click", connectToCall);
+const connectToCallButton=document.getElementById("connect-button");
+connectToCallButton.addEventListener("click",connectToCall);
 
-const createCallButton = document.getElementById("create-call-button");
-createCallButton.addEventListener("click", createCall);
+const createCallButton=document.getElementById("create-call-button");
+createCallButton.addEventListener("click",createCall);
 
-const hangUpButton = document.getElementById("hangup-button");
-hangUpButton.addEventListener("click", hangUpCall);
+const hangUpButton=document.getElementById("hangup-button");
+hangUpButton.addEventListener("click",hangUpCall);
 
-const registerButton = document.getElementById("register-button");
-registerButton.addEventListener("click", register);
+const registerButton=document.getElementById("register-button");
+registerButton.addEventListener("click",register);
 
-const loginButton = document.getElementById("login-button");
-loginButton.addEventListener("click", login);
+const loginButton=document.getElementById("login-button");
+loginButton.addEventListener("click",login);
 
-const logoutButton = document.getElementById("logout-button");
-logoutButton.addEventListener("click", logout);
+const logoutButton=document.getElementById("logout-button");
+logoutButton.addEventListener("click",logout);
 
-const usernameInput = document.getElementById("username");
-const emailInput = document.getElementById("email");
-const passwordInput = document.getElementById("password");
+const usernameInput=document.getElementById("username");
+const emailInput=document.getElementById("email");
+const passwordInput=document.getElementById("password");
 
 
 let websocket;
@@ -29,8 +30,8 @@ async function register() {
 
 	try {
 
-		registerButton.textContent = "Registering...";
-		const result = await fetch(`http://localhost:3000/signup`, {
+		registerButton.textContent="Registering...";
+		const result=await fetch(`http://localhost:3000/signup`,{
 			method: "POST",
 			body: JSON.stringify({
 				username: usernameInput.value,
@@ -43,34 +44,34 @@ async function register() {
 		});
 
 		if (result.ok) {
-			const dataBody = await result.json();
+			const dataBody=await result.json();
 
-			console.log("result", dataBody);
-			const { success, data } = dataBody;
+			console.log("result",dataBody);
+			const {success,data}=dataBody;
 
 			if (!success) {
 				alert("Signup failed");
 				throw new Error("Signup failed");
 			}
 
-			connectToCallButton.disabled = false;
-			createCallButton.disabled = false;
-			registerButton.textContent = "Register";
+			connectToCallButton.disabled=false;
+			createCallButton.disabled=false;
+			registerButton.textContent="Register";
 
 			alert("Succesful sign up!");
 		}
 
 	} catch (err) {
-		registerButton.textContent = "Register";
-		console.error("An error occurred:", err);
+		registerButton.textContent="Register";
+		console.error("An error occurred:",err);
 	}
 }
 
 async function login() {
 	try {
 
-		loginButton.textContent = "Logging in...";
-		const result = await fetch(`http://localhost:3000/login`, {
+		loginButton.textContent="Logging in...";
+		const result=await fetch(`http://localhost:3000/login`,{
 			method: "POST",
 			body: JSON.stringify({
 				username: usernameInput.value,
@@ -78,104 +79,111 @@ async function login() {
 				password: passwordInput.value
 			}),
 			headers: {
-				"Content-type": "application/json; charset=UTF-8"
+				"Content-type": "application/json; charset=UTF-8",
 			}
 		});
 
 		if (result.ok) {
-			const dataBody = await result.json();
+			const dataBody=await result.json();
 
-			console.log("result", dataBody);
-			const { success, data } = dataBody;
+			console.log("result",dataBody);
+			const {success,data}=dataBody;
 
 			if (!success) {
 				alert("Login failed");
 				throw new Error("Login failed");
 			}
 
-			connectToCallButton.disabled = false;
-			createCallButton.disabled = false;
-			loginButton.textContent = "Login";
+			const {token}=data;
+			tokenService.setToken(token);
+
+
+			connectToCallButton.disabled=false;
+			createCallButton.disabled=false;
+			loginButton.textContent="Login";
 
 			alert("Succesful login!");
 		}
 
 	} catch (err) {
-		loginButton.textContent = "Login";
-		console.error("An error occurred:", err);
+		loginButton.textContent="Login";
+		console.error("An error occurred:",err);
 	}
 }
 
 async function logout() {
 	try {
 
-		logoutButton.textContent = "Logging out...";
-		const result = await fetch(`http://localhost:3000/logout`, {
+		logoutButton.textContent="Logging out...";
+		tokenService.clearToken();
+		const result=await fetch(`http://localhost:3000/logout`,{
 			method: "POST",
 			headers: {
-				"Content-type": "application/json; charset=UTF-8"
+				"Content-type": "application/json; charset=UTF-8",
+				"Authorization": `Bearer ${tokenService.getToken()}`
 			}
 		});
 
 		if (result.ok) {
-			const dataBody = await result.json();
+			const dataBody=await result.json();
 
-			console.log("result", dataBody);
-			const { success, data } = dataBody;
+			console.log("result",dataBody);
+			const {success,data}=dataBody;
 
 			if (!success) {
 				alert("Logout failed");
 				throw new Error("Logout failed");
 			}
 
-			joinCallButton.disabled = false;
-			createCallButton.disabled = false;
-			logoutButton.textContent = "Logout";
+			joinCallButton.disabled=false;
+			createCallButton.disabled=false;
+			logoutButton.textContent="Logout";
 
 			alert("Logged out!");
 		}
 
 	} catch (err) {
-		logoutButton.textContent = "Logout";
-		console.error("An error occurred:", err);
+		logoutButton.textContent="Logout";
+		console.error("An error occurred:",err);
 	}
 }
 
 async function establishWebSocketServerConn(callURL) {
 
 	// should have some error handling here around establishing ws connection
-	websocket = new WebSocket(callURL);
+	websocket=new WebSocket(callURL);
 }
 
 async function connectToCall() {
 
-	const enteredUsername = usernameInput.value;
-	const enteredEmail = emailInput.value;
-	const callID = document.getElementById("connect-to-call").value;
+	const enteredUsername=usernameInput.value;
+	const enteredEmail=emailInput.value;
+	const callID=document.getElementById("connect-to-call").value;
 
-	const joinCallButton = document.getElementById("connect-button");
-	joinCallButton.textContent = "Joining Call...";
+	const joinCallButton=document.getElementById("connect-button");
+	joinCallButton.textContent="Joining Call...";
 
 	try {
-		const result = await fetch(`http://localhost:3000/call/${callID}/join`, {
+		const result=await fetch(`http://localhost:3000/call/${callID}/join`,{
 			method: "PUT",
 			headers: {
-				"Content-type": "application/json; charset=UTF-8"
+				"Content-type": "application/json; charset=UTF-8",
+				"Authorization": `Bearer ${tokenService.getToken()}`
 			}
 		});
 
 		if (result.ok) {
-			const dataBody = await result.json();
+			const dataBody=await result.json();
 
-			console.log("result", dataBody);
-			const { success, data } = dataBody;
+			console.log("result",dataBody);
+			const {success,data}=dataBody;
 
 			if (!success) {
-				joinCallButton.textContent = "Join Call";
+				joinCallButton.textContent="Join Call";
 				throw new Error("Create new call failed");
 			}
 
-			const { callURL } = data;
+			const {callURL}=data;
 
 			// fetch and display local video 
 			await getLocalMedia();
@@ -184,20 +192,20 @@ async function connectToCall() {
 			await establishWebSocketServerConn(callURL);
 
 			// display currrent call ID connected to in UI
-			const currentcallIDDisplay = document.getElementById("current-call-id-display");
-			currentcallIDDisplay.textContent = callID;
+			const currentcallIDDisplay=document.getElementById("current-call-id-display");
+			currentcallIDDisplay.textContent=callID;
 
 			// reset join call button to default text after connection established
-			joinCallButton.textContent = "Join Call";
+			joinCallButton.textContent="Join Call";
 
 			if (websocket) {
-				websocket.addEventListener("open", () => {
+				websocket.addEventListener("open",() => {
 
 					console.log("Established websocket server connection succesfully");
-					const messagesToSend = [];
-					const msg1 = {
+					const messagesToSend=[];
+					const msg1={
 						"type": "newParticipantOnCall",
-						"data": { username: enteredUsername, callID: callID, email: enteredEmail }
+						"data": {username: enteredUsername,callID: callID,email: enteredEmail}
 					};
 					messagesToSend.push(msg1);
 
@@ -211,46 +219,46 @@ async function connectToCall() {
 
 
 				// respond to messages from ws server
-				websocket.addEventListener("message", (e) => {
-					console.log("Received new message:", e.data);
-					const message = JSON.parse(e.data);
+				websocket.addEventListener("message",(e) => {
+					console.log("Received new message:",e.data);
+					const message=JSON.parse(e.data);
 
-					const { type, data } = message;
+					const {type,data}=message;
 
 					switch (type) {
 						case 'receivedNewParticipantNotif':
 						case 'chatMessage':
 
-							const chatMessage = data.message;
+							const chatMessage=data.message;
 
 
 							// update DOM with message on new chat participant joining and/or new chat message
-							const chatMessagesContainer = document.getElementById('chat-messages');
-							const newPara = document.createElement('p');
+							const chatMessagesContainer=document.getElementById('chat-messages');
+							const newPara=document.createElement('p');
 
-							newPara.textContent = chatMessage;
+							newPara.textContent=chatMessage;
 							chatMessagesContainer.appendChild(newPara);
 
 							break;
 
 						case 'responseCurrentCallParticipants':
-							const otherCallParticipants = data.participants;
-							const callerText = document.getElementById("username").value;
+							const otherCallParticipants=data.participants;
+							const callerText=document.getElementById("username").value;
 
-							console.log("other call participants receieved:", otherCallParticipants);
+							console.log("other call participants receieved:",otherCallParticipants);
 
 							otherCallParticipants.forEach(participant => {
-								const createdOffer = sendOffer(callerText, participant);
+								const createdOffer=sendOffer(callerText,participant);
 								websocket.send(JSON.stringify(createdOffer))
 							});
 
 							// Update DOM to display current participants on call being joined
-							const currentParticipantsContainer = document.getElementById('call-participants-list');
+							const currentParticipantsContainer=document.getElementById('call-participants-list');
 
 							otherCallParticipants.map((participantName) => {
-								const newPara = document.createElement('p');
+								const newPara=document.createElement('p');
 
-								newPara.textContent = participantName;
+								newPara.textContent=participantName;
 
 								currentParticipantsContainer.appendChild(newPara);
 							})
@@ -258,7 +266,7 @@ async function connectToCall() {
 							break;
 
 						case 'offer':
-							const { caller, recipient, offer } = data;
+							const {caller,recipient,offer}=data;
 							console.log(`Received offer message from user ${caller}`);
 
 							break;
@@ -274,49 +282,50 @@ async function connectToCall() {
 		}
 
 	} catch (err) {
-		joinCallButton.textContent = "Join Call";
-		console.error("An error occurred:", err);
+		joinCallButton.textContent="Join Call";
+		console.error("An error occurred:",err);
 	}
 }
 
 function hangUpCall() {
-
+	/* To be implemented */
 }
 
 async function createCall() {
 
-	const enteredUsername = document.getElementById("username").value;
+	const enteredUsername=document.getElementById("username").value;
 
-	const createCallButton = document.getElementById("create-call-button");
-	createCallButton.textContent = "Creating Call...";
+	const createCallButton=document.getElementById("create-call-button");
+	createCallButton.textContent="Creating Call...";
 
 	try {
-		const result = await fetch("http://localhost:3000/call/create", {
+		const result=await fetch("http://localhost:3000/call/create",{
 			method: "POST",
 			headers: {
-				"Content-type": "application/json; charset=UTF-8"
+				"Content-type": "application/json; charset=UTF-8",
+				"Authorization": `Bearer ${tokenService.getToken()}`
 			}
 		});
 
 		if (result.ok) {
 
-			const dataBody = await result.json();
+			const dataBody=await result.json();
 
-			console.log("result", dataBody);
-			const { success, data } = dataBody;
+			console.log("result",dataBody);
+			const {success,data}=dataBody;
 
 
 			if (!success) {
-				createCallButton.textContent = "Create Call";
+				createCallButton.textContent="Create Call";
 				throw new Error("Create new call failed");
 			}
 
-			const { callID, callURL } = data;
+			const {callID,callURL}=data;
 
-			const currentcallIDDisplay = document.getElementById("current-call-id-display");
-			currentcallIDDisplay.textContent = callID;
+			const currentcallIDDisplay=document.getElementById("current-call-id-display");
+			currentcallIDDisplay.textContent=callID;
 
-			createCallButton.textContent = "Create Call";
+			createCallButton.textContent="Create Call";
 
 			// fetch and display local video 
 			await getLocalMedia();
@@ -325,13 +334,13 @@ async function createCall() {
 			await establishWebSocketServerConn(callURL);
 
 			if (websocket) {
-				websocket.addEventListener("open", () => {
+				websocket.addEventListener("open",() => {
 
 					console.log("Established websocket server connection succesfully");
-					const messagesToSend = [];
-					const msg1 = {
+					const messagesToSend=[];
+					const msg1={
 						"type": "newParticipantOnCall",
-						"data": { username: enteredUsername, callID: callID }
+						"data": {username: enteredUsername,callID: callID}
 					};
 					messagesToSend.push(msg1);
 
@@ -345,50 +354,50 @@ async function createCall() {
 
 
 				// respond to messages from ws server
-				websocket.addEventListener("message", (e) => {
-					console.log("Received new message:", e.data);
-					const message = JSON.parse(e.data);
+				websocket.addEventListener("message",(e) => {
+					console.log("Received new message:",e.data);
+					const message=JSON.parse(e.data);
 
-					const { type, data } = message;
+					const {type,data}=message;
 
 					switch (type) {
 						case 'receivedNewParticipantNotif':
 						case 'chatMessage':
 
-							const chatMessage = data.message;
+							const chatMessage=data.message;
 
 
 							// update DOM with message on new chat participant joining and/or new chat message
-							const chatMessagesContainer = document.getElementById('chat-messages');
-							const newPara = document.createElement('p');
+							const chatMessagesContainer=document.getElementById('chat-messages');
+							const newPara=document.createElement('p');
 
-							newPara.textContent = chatMessage;
+							newPara.textContent=chatMessage;
 							chatMessagesContainer.appendChild(newPara);
 
 							break;
 						case 'responseCurrentCallParticipants':
-							const otherCallParticipants = data.participants;
-							const callerText = document.getElementById("username").value;
+							const otherCallParticipants=data.participants;
+							const callerText=document.getElementById("username").value;
 
 							otherCallParticipants.forEach(participant => {
-								const createdOffer = sendOffer(callerText, participant);
+								const createdOffer=sendOffer(callerText,participant);
 								websocket.send(JSON.stringify(createdOffer))
 							});
 
 							// Update DOM to display current participants on call being joined
-							const currentParticipantsContainer = document.getElementById('my-container');
+							const currentParticipantsContainer=document.getElementById('my-container');
 
 							otherCallParticipants.map((participantName) => {
-								const newPara = document.createElement('p');
+								const newPara=document.createElement('p');
 
-								newPara.textContent = participantName;
+								newPara.textContent=participantName;
 
 								currentParticipantsContainer.appendChild(newPara);
 							})
 
 							break;
 						case 'offer':
-							const { caller, recipient, offer } = data;
+							const {caller,recipient,offer}=data;
 							console.log(`Received offer message from user ${caller}`);
 
 							break;
@@ -401,8 +410,8 @@ async function createCall() {
 		}
 
 	} catch (err) {
-		console.error("An error occurred:", err);
-		createCallButton.textContent = "Create Call";
+		console.error("An error occurred:",err);
+		createCallButton.textContent="Create Call";
 	}
 
 }
