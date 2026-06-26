@@ -39,7 +39,7 @@ onmessage=async function(event) {
 			postMessage(createCallResult);
 			break;
 		case 'ReqJoinCall':
-			const joinCallResult=await handleJoinCall();
+			const joinCallResult=await handleJoinCall(requestBody);
 			postMessage(joinCallResult);
 			break;
 		case 'ReqLeaveCall':
@@ -198,11 +198,13 @@ async function handleJoinCall(requestBody) {
 	});
 
 	if (result.ok) {
+		console.log("Succesful join call response");
 		const dataBody=await result.json();
 
 		const {success,data}=dataBody;
 
 		if (!success) {
+			console.log("Unsuccesful in result.ok for joinCall:",result);
 			resultMessage.message="Join new call failed";
 			return resultMessage;
 		}
@@ -210,6 +212,7 @@ async function handleJoinCall(requestBody) {
 		const {callURL}=data;
 		resultMessage.message=callURL;
 	} else {
+		console.log("Unsuccesful when not receieved result.ok for joinCall:",result);
 		resultMessage.message="Join new call failed";
 	}
 

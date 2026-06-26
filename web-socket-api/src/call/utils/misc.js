@@ -1,10 +1,29 @@
 const {wss}=require('./session-store');
-const {CallParticipants,Call}=require('../../common/models');
+const {CallParticipants,Call,Op}=require('../../common/models');
 
-exports.constructURI=(callID) => {
+exports.getRelevantWSS=async (callID) => {
+
+	try {
+		const foundWss=wss.find(wsServer => callID in wsServer);
+		const activeWSS=foundWss? foundWss[callID]:null;
+
+		if (!activeWSS) {
+			throw new Error("No wss object found for callID");
+		}
+
+		return activeWSS;
+	}
+	catch (err) {
+		console.error("Error retrieving requested wss object:",err);
+	}
+}
+
+exports.constructURI=async (callID) => {
 
 	// constructing URI of WS server created
-	const relevantWSS=wss.callID;
+
+
+	const relevantWSS=await exports.getRelevantWSS(callID);
 	const addressInfo=relevantWSS.address();
 
 	const host=addressInfo.address==='::'? 'localhost':addressInfo.address;
@@ -12,29 +31,52 @@ exports.constructURI=(callID) => {
 
 	const uri=`ws://${host}:${port}`;
 
+	console.log("this is the uri:",uri);
 	return uri;
 }
 
-exports.broadcast=(message) => {
-	if (wss.clients) {
-		wss.clients.forEach((client) => {
-			// Check if the connection is fully open
-			if (client.readyState===1) {
-				client.send(JSON.stringify(message));
-			}
-		});
+exports.broadcast=async (message,callID) => {
+	try {
+		console.log("broadcasting message");
+
+		console.log("this is the current wss:",wss);
+
+		// get correct wss server to send messages to joined participants on
+		const activeWSS=await exports.getRelevantWSS(callID);
+
+
+		if (activeWSS.clients) {
+
+			activeWSS.clients.forEach(async (client) => {
+				// Check if the connection is fully open
+				if (client.readyState===1) {
+					await client.send(JSON.stringify(message));
+				}
+			});
+		}
+	} catch (err) {
+		console.error(`Error during message broadcast for callID: ${callID}: ${err}`)
 	}
+
 
 }
 
-exports.sendMessageToParticipant=(targetParticipant,message) => {
+exports.sendMessageToParticipant=async (targetParticipant,message,callID) => {
 	try {
 
-		if (wss.clients) {
-			const participant=Array.from(wss.clients).find(client => client.username===targetParticipant);
+		// get correct wss server to send messages to joined participants on
+		const activeWSS=await exports.getRelevantWSS(callID);
+
+		if (activeWSS.clients) {
+			console.log("these are the activeWSS clients:",activeWSS.clients);
+
+
+			const participant=[...activeWSS.clients].find(client => client.email===targetParticipant);
+
 			if (!(participant&&participant.readyState===1)) {
 				throw new Error("Unable to find participant or participant ws connection not open");
 			}
+			console.log("Found participant to send msg to:",participant.email);
 			participant.send(JSON.stringify(message));
 		}
 
@@ -51,17 +93,18 @@ exports.handleNewCallParticipantMsg=async (data) => {
 
 	const {username,email,callID}=data;
 	console.log("New Participant joined:",username,email,callID);
-	console.log(`User ${username} connected to WebSocket server`);
+	console.log(`User ${email} connected to WebSocket server`);
 	const newParticipantNotif=
 	{
 		type: 'receivedNewParticipantNotif',
-		data: {message: `${username} joined chat`}
+		data: {message: `${email} joined chat`}
 	}
 
-
-	exports.broadcast(newParticipantNotif);
+	console.log("About to call broadcast...");
+	await exports.broadcast(newParticipantNotif,callID);
 
 	// Update status of user from 'pending' to 'active' on the call
+	console.log("this is the callID:",callID);
 	const currentCallParticipant=await CallParticipants.findOne({
 		where: {
 			CallCallID: callID,
@@ -78,25 +121,24 @@ exports.handleNewCallParticipantMsg=async (data) => {
 	const activeUsers=await CallParticipants.findAll({
 		where: {
 			CallCallID: callID,
-			status: 'active'
-		}
+			status: 'active',
+			userEmail: {
+				[Op.ne]: email
+			}
+		},
+		raw: true
 	});
+
 
 	if (activeUsers.length>0) {
 
-		console.log("the other participants on the call:",activeUsers);
-		const otherCallParticipants=[];
-
-		for (user in activeUsers) {
-			if (user.email!==email) {
-				otherCallParticipants.push(user.email);
-			}
-		}
+		console.log("activeUsers are:",activeUsers[0]);
+		const otherCallParticipants=activeUsers.map(user => user.userEmail);
 
 		const currentCallParticipantsMsg=JSON.stringify(
 			{
 				type: 'responseCurrentCallParticipants',
-				data: {participants: otherCallParticipants}
+				data: {participants: otherCallParticipants,callID: callID}
 			}
 		)
 
@@ -106,7 +148,7 @@ exports.handleNewCallParticipantMsg=async (data) => {
 	return JSON.stringify(
 		{
 			type: 'responseCurrentCallParticipants',
-			data: {participants: []}
+			data: {participants: [],callID: callID}
 		}
 	)
 
@@ -115,8 +157,26 @@ exports.handleNewCallParticipantMsg=async (data) => {
 
 }
 
+exports.handleICECandidate=(data) => {
+	const {caller,recipient,candidate,callID}=data;
+	console.log(`User ${caller} sent ICE candidate to ${recipient}`);
+
+	// prepare message format to return to intended recipient
+	const iceCandidateForReceipient={
+		type: 'candidate',
+		data: {
+			caller: caller,
+			recipient: recipient,
+			candidate: candidate
+		}
+	}
+
+	exports.sendMessageToParticipant(recipient,iceCandidateForReceipient,callID);
+
+}
+
 exports.handleOffer=(data) => {
-	const {caller,recipient,offer}=data;
+	const {caller,recipient,offer,callID}=data;
 	console.log(`User ${caller} sent offer to ${recipient}`);
 
 	// prepare message format to return to intended recipient
@@ -129,7 +189,7 @@ exports.handleOffer=(data) => {
 		}
 	}
 
-	exports.sendMessageToParticipant(recipient,offerMessageToReceipient);
+	exports.sendMessageToParticipant(recipient,offerMessageToReceipient,callID);
 }
 
 exports.setRandomPort=async () => {

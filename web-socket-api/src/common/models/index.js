@@ -1,20 +1,20 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../database');
+const {DataTypes,Op}=require('sequelize');
+const sequelize=require('../database');
 
 
-const defineUser = require('./User');
-const defineCall = require('./Call');
-const defineRefreshToken = require('./RefreshToken');
-const defineCallParticipants = require('./CallParticipants');
+const defineUser=require('./User');
+const defineCall=require('./Call');
+const defineRefreshToken=require('./RefreshToken');
+const defineCallParticipants=require('./CallParticipants');
 
-const User = defineUser(sequelize);
-const Call = defineCall(sequelize);
-const RefreshToken = defineRefreshToken(sequelize);
-const CallParticipants = defineCallParticipants(sequelize);
+const User=defineUser(sequelize);
+const Call=defineCall(sequelize);
+const RefreshToken=defineRefreshToken(sequelize);
+const CallParticipants=defineCallParticipants(sequelize);
 
-User.belongsToMany(Call, { through: CallParticipants });
-Call.belongsToMany(User, { through: CallParticipants });
-User.hasOne(RefreshToken, {
+User.belongsToMany(Call,{through: CallParticipants});
+Call.belongsToMany(User,{through: CallParticipants});
+User.hasOne(RefreshToken,{
 	foreignKey: {
 		allowNull: false,
 	},
@@ -23,4 +23,4 @@ RefreshToken.belongsTo(User);
 
 sequelize.sync();
 
-module.exports = { sequelize, User, Call, RefreshToken, CallParticipants };
+module.exports={sequelize,User,Call,RefreshToken,CallParticipants,Op};

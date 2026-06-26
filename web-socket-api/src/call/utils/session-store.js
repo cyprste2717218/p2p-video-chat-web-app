@@ -1,2 +1,2 @@
-const wss = {};
-exports.wss = wss;
+const wss=[];
+exports.wss=wss;

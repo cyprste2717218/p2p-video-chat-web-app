@@ -45,6 +45,8 @@ exports.createCall=async (req,res) => {
 		const uri=wsServerInfo.uri;
 		const callID=wsServerInfo.callID;
 
+		console.log("this is the uri within createCall handler:",uri);
+
 		// Find the entry in 'users' table for user creating the call 
 		const retrievedUser=await User.findByPk(email);
 		if (retrievedUser===null) {
@@ -78,6 +80,7 @@ exports.joinCall=async (req,res) => {
 
 		// validate request params
 		if (!validateCallParams(req.params)) {
+			console.log("Invalid call params:",validateCallParams.errors);
 			return res.status(400).json({success: false,data: {error: 'No Call ID passed',details: validateCallParams.errors}});
 		}
 
@@ -90,6 +93,7 @@ exports.joinCall=async (req,res) => {
 		// verify call has not ended yet
 		const isCallFinished=requestedCall.finishedAt;
 		if (isCallFinished) {
+			console.log("Call has already finished at:",isCallFinished);
 			return res.status(400).json({success: false,data: {error: 'Call has ended'}});
 		}
 

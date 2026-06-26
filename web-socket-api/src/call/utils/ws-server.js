@@ -1,7 +1,7 @@
 //require our websocket library 
 var WebSocketServer=require('ws').Server;
 const uuid=require('uuid');
-const {handleOffer,handleNewCallParticipantMsg,broadcast,constructURI,setRandomPort}=require('./misc');
+const {handleOffer,handleICECandidate,handleNewCallParticipantMsg,broadcast,constructURI,setRandomPort,getRelevantWSS}=require('./misc');
 const {wss}=require('./session-store');
 
 
@@ -18,6 +18,7 @@ exports.createWebSocketsServer=async () => {
 
 					try {
 						parsedMessage=JSON.parse(message);
+						console.log("this is the parsedMessage:",parsedMessage);
 					} catch (err) {
 						console.error("Couldn't parse message from stringified JSON");
 					}
@@ -28,6 +29,8 @@ exports.createWebSocketsServer=async () => {
 						type=parsedMessage.type;
 						data=parsedMessage.data;
 					}
+
+					console.log("this is the data:",data);
 
 					switch (type) {
 						case 'newParticipantOnCall':
@@ -52,6 +55,10 @@ exports.createWebSocketsServer=async () => {
 						case 'offer':
 
 							handleOffer(data);
+							break;
+						case 'candidate':
+
+							handleICECandidate(data);
 							break;
 						default:
 							console.log("message of unrecognised type sent:",type);
@@ -78,12 +85,16 @@ exports.createWebSocketsServer=async () => {
 
 	try {
 
-		wss.callID=new WebSocketServer({port: portNum});
-		const activeWSS=wss.callID;
+		wss.push({[callID]: new WebSocketServer({port: portNum})});
+		console.log("these are the new Web Socket Server details:",wss);
+
+		const activeWSS=await getRelevantWSS(callID);
+
+		console.log("the created activeWSS:",activeWSS);
 
 		await handleServerMessages(activeWSS);
 
-		const uri=constructURI(callID);
+		const uri=await constructURI(callID);
 		return {callID,uri};
 
 	} catch (err) {

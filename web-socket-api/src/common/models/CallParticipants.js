@@ -1,14 +1,14 @@
-const { DataTypes } = require('sequelize');
+const {DataTypes}=require('sequelize');
 
-const CallParticipantsModel = {
+const CallParticipantsModel={
 	status: {
 		type: DataTypes.TEXT,
 		allowNull: false,
 		defaultValue: 'pending',
 		validate: {
-			isIn: [['pending', 'active']]
+			isIn: [['pending','active']]
 		}
 	}
 };
 
-module.exports = (sequelize) => sequelize.define('callParticipants', CallParticipantsModel, { timestamps: false },);
+module.exports=(sequelize) => sequelize.define('callParticipants',CallParticipantsModel,{timestamps: false},);

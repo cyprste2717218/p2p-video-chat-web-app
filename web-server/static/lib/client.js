@@ -1,4 +1,4 @@
-import {getLocalMedia,sendOffer} from "./rtcUtils.js";
+import {getLocalMedia,sendOffer,establishWebSocketServerConn,sendJoiningMessage,attachWSConnListeners} from "./rtcUtils.js";
 
 const connectToCallButton=document.getElementById("connect-button");
 connectToCallButton.addEventListener("click",connectToCall);
@@ -22,8 +22,6 @@ const usernameInput=document.getElementById("username");
 const emailInput=document.getElementById("email");
 const passwordInput=document.getElementById("password");
 
-
-let websocket;
 const tokenWorker=new Worker('../token-worker.js',{type: "module"});
 
 async function getWorkerResponse(messageReqType,messageResType,requestBody) {
@@ -82,7 +80,7 @@ async function login() {
 		const loginBody={
 			username: usernameInput.value,
 			email: emailInput.value,
-			password: passwordInput.value
+			password: passwordInput.value,
 		}
 
 		const result=await getWorkerResponse("ReqLogin","ResLogin",loginBody);
@@ -132,16 +130,8 @@ async function logout() {
 	}
 }
 
-async function establishWebSocketServerConn(callURL) {
-
-	// should have some error handling here around establishing ws connection
-	websocket=new WebSocket(callURL);
-}
-
 async function connectToCall() {
 
-	const enteredUsername=usernameInput.value;
-	const enteredEmail=emailInput.value;
 	const callID=document.getElementById("connect-to-call").value;
 
 	const joinCallButton=document.getElementById("connect-button");
@@ -163,6 +153,12 @@ async function connectToCall() {
 		// establish connection to websocket server created
 		await establishWebSocketServerConn(callURL);
 
+		// set up ws event handlers to respond to messages receieved
+		await attachWSConnListeners(emailInput.value);
+
+		// start connection negotiation process with any current call participants
+		sendJoiningMessage(usernameInput.value,emailInput.value,callID);
+
 		// display currrent call ID connected to in UI
 		const currentcallIDDisplay=document.getElementById("current-call-id-display");
 		currentcallIDDisplay.textContent=callID;
@@ -170,83 +166,7 @@ async function connectToCall() {
 		// reset join call button to default text after connection established
 		joinCallButton.textContent="Join Call";
 
-		if (websocket) {
-			websocket.addEventListener("open",() => {
 
-				console.log("Established websocket server connection succesfully");
-				const messagesToSend=[];
-				const msg1={
-					"type": "newParticipantOnCall",
-					"data": {username: enteredUsername,callID: callID,email: enteredEmail}
-				};
-				messagesToSend.push(msg1);
-
-
-				messagesToSend.map((message) => {
-					websocket.send(JSON.stringify(message));
-				});
-
-
-			});
-
-
-			// respond to messages from ws server
-			websocket.addEventListener("message",(e) => {
-				console.log("Received new message:",e.data);
-				const message=JSON.parse(e.data);
-
-				const {type,data}=message;
-
-				switch (type) {
-					case 'receivedNewParticipantNotif':
-					case 'chatMessage':
-
-						const chatMessage=data.message;
-
-
-						// update DOM with message on new chat participant joining and/or new chat message
-						const chatMessagesContainer=document.getElementById('chat-messages');
-						const newPara=document.createElement('p');
-
-						newPara.textContent=chatMessage;
-						chatMessagesContainer.appendChild(newPara);
-
-						break;
-
-					case 'responseCurrentCallParticipants':
-						const otherCallParticipants=data.participants;
-						const callerText=document.getElementById("username").value;
-
-						console.log("other call participants receieved:",otherCallParticipants);
-
-						otherCallParticipants.forEach(participant => {
-							const createdOffer=sendOffer(callerText,participant);
-							websocket.send(JSON.stringify(createdOffer))
-						});
-
-						// Update DOM to display current participants on call being joined
-						const currentParticipantsContainer=document.getElementById('call-participants-list');
-
-						otherCallParticipants.map((participantName) => {
-							const newPara=document.createElement('p');
-
-							newPara.textContent=participantName;
-
-							currentParticipantsContainer.appendChild(newPara);
-						})
-
-						break;
-
-					case 'offer':
-						const {caller,recipient,offer}=data;
-						console.log(`Received offer message from user ${caller} `);
-
-						break;
-				}
-			})
-
-
-		}
 
 
 	} catch (err) {
@@ -260,9 +180,6 @@ function hangUpCall() {
 }
 
 async function createCall() {
-
-	const enteredUsername=document.getElementById("username").value;
-	const enteredEmail=emailInput.value;
 
 	const createCallButton=document.getElementById("create-call-button");
 	createCallButton.textContent="Creating Call...";
@@ -290,79 +207,11 @@ async function createCall() {
 		// establish connection to websocket server created
 		await establishWebSocketServerConn(callURL);
 
-		if (websocket) {
-			websocket.addEventListener("open",() => {
+		// set up ws event handlers to respond to messages receieved
+		await attachWSConnListeners(emailInput.value);
 
-				console.log("Established websocket server connection succesfully");
-				const messagesToSend=[];
-				const msg1={
-					"type": "newParticipantOnCall",
-					"data": {username: enteredUsername,email: enteredEmail,callID: callID}
-				};
-				messagesToSend.push(msg1);
-
-
-				messagesToSend.map((message) => {
-					websocket.send(JSON.stringify(message));
-				});
-
-
-			});
-
-
-			// respond to messages from ws server
-			websocket.addEventListener("message",(e) => {
-				console.log("Received new message:",e.data);
-				const message=JSON.parse(e.data);
-
-				const {type,data}=message;
-
-				switch (type) {
-					case 'receivedNewParticipantNotif':
-					case 'chatMessage':
-
-						const chatMessage=data.message;
-
-
-						// update DOM with message on new chat participant joining and/or new chat message
-						const chatMessagesContainer=document.getElementById('chat-messages');
-						const newPara=document.createElement('p');
-
-						newPara.textContent=chatMessage;
-						chatMessagesContainer.appendChild(newPara);
-
-						break;
-					case 'responseCurrentCallParticipants':
-						const otherCallParticipants=data.participants;
-						const callerText=document.getElementById("username").value;
-
-						otherCallParticipants.forEach(participant => {
-							const createdOffer=sendOffer(callerText,participant);
-							websocket.send(JSON.stringify(createdOffer))
-						});
-
-						// Update DOM to display current participants on call being joined
-						const currentParticipantsContainer=document.getElementById('call-participants-list');
-
-						otherCallParticipants.map((participantName) => {
-							const newPara=document.createElement('p');
-
-							newPara.textContent=participantName;
-
-							currentParticipantsContainer.appendChild(newPara);
-						})
-
-						break;
-					case 'offer':
-						const {caller,recipient,offer}=data;
-						console.log(`Received offer message from user ${caller} `);
-
-						break;
-				}
-			})
-
-
-		}
+		// start connection negotiation process with any current call participants
+		sendJoiningMessage(usernameInput.value,emailInput.value,callID);
 
 	} catch (err) {
 		console.error("An error occurred:",err);
