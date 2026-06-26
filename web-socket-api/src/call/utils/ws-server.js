@@ -1,7 +1,7 @@
 //require our websocket library 
 var WebSocketServer=require('ws').Server;
 const uuid=require('uuid');
-const {handleOffer,handleICECandidate,handleNewCallParticipantMsg,broadcast,constructURI,setRandomPort,getRelevantWSS}=require('./misc');
+const {handleOffer,handleAnswer,handleICECandidate,handleNewCallParticipantMsg,broadcast,constructURI,setRandomPort,getRelevantWSS}=require('./misc');
 const {wss}=require('./session-store');
 
 
@@ -59,6 +59,10 @@ exports.createWebSocketsServer=async () => {
 						case 'candidate':
 
 							handleICECandidate(data);
+							break;
+						case 'answer':
+
+							handleAnswer(data);
 							break;
 						default:
 							console.log("message of unrecognised type sent:",type);

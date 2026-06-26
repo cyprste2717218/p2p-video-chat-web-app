@@ -4,13 +4,14 @@ const {CallParticipants,Call,Op}=require('../../common/models');
 exports.getRelevantWSS=async (callID) => {
 
 	try {
+		console.log("trying to find wss for:",callID);
 		const foundWss=wss.find(wsServer => callID in wsServer);
 		const activeWSS=foundWss? foundWss[callID]:null;
 
 		if (!activeWSS) {
 			throw new Error("No wss object found for callID");
 		}
-
+		console.log(`found a wss object for the call with ID ${callID}!`)
 		return activeWSS;
 	}
 	catch (err) {
@@ -91,66 +92,72 @@ exports.sendMessageToParticipant=async (targetParticipant,message,callID) => {
 
 exports.handleNewCallParticipantMsg=async (data) => {
 
-	const {username,email,callID}=data;
-	console.log("New Participant joined:",username,email,callID);
-	console.log(`User ${email} connected to WebSocket server`);
-	const newParticipantNotif=
-	{
-		type: 'receivedNewParticipantNotif',
-		data: {message: `${email} joined chat`}
-	}
-
-	console.log("About to call broadcast...");
-	await exports.broadcast(newParticipantNotif,callID);
-
-	// Update status of user from 'pending' to 'active' on the call
-	console.log("this is the callID:",callID);
-	const currentCallParticipant=await CallParticipants.findOne({
-		where: {
-			CallCallID: callID,
-			UserEmail: email,
+	try {
+		const {username,email,callID}=data;
+		console.log("New Participant joined:",username,email,callID);
+		console.log(`User ${email} connected to WebSocket server`);
+		const newParticipantNotif=
+		{
+			type: 'receivedNewParticipantNotif',
+			data: {message: `${email} joined chat`}
 		}
-	});
 
-	await currentCallParticipant.update({
-		status: 'active'
-	});
+		console.log("About to call broadcast...");
+		await exports.broadcast(newParticipantNotif,callID);
 
-
-	// Returning names of current call participants to new participant to establish connections
-	const activeUsers=await CallParticipants.findAll({
-		where: {
-			CallCallID: callID,
-			status: 'active',
-			userEmail: {
-				[Op.ne]: email
+		// Update status of user from 'pending' to 'active' on the call
+		console.log("this is the callID:",callID);
+		const currentCallParticipant=await CallParticipants.findOne({
+			where: {
+				CallCallID: callID,
+				UserEmail: email,
 			}
-		},
-		raw: true
-	});
+		});
+
+		await currentCallParticipant.update({
+			status: 'active'
+		});
 
 
-	if (activeUsers.length>0) {
+		// Returning names of current call participants to new participant to establish connections
+		const activeUsers=await CallParticipants.findAll({
+			where: {
+				CallCallID: callID,
+				status: 'active',
+				userEmail: {
+					[Op.ne]: email
+				}
+			},
+			raw: true
+		});
 
-		console.log("activeUsers are:",activeUsers[0]);
-		const otherCallParticipants=activeUsers.map(user => user.userEmail);
 
-		const currentCallParticipantsMsg=JSON.stringify(
+		if (activeUsers.length>0) {
+
+			console.log("activeUsers are:",activeUsers[0]);
+			const otherCallParticipants=activeUsers.map(user => user.userEmail);
+
+			const currentCallParticipantsMsg=JSON.stringify(
+				{
+					type: 'responseCurrentCallParticipants',
+					data: {participants: otherCallParticipants,callID: callID,currentUserEmail: email}
+				}
+			)
+
+			return currentCallParticipantsMsg;
+		}
+
+		return JSON.stringify(
 			{
 				type: 'responseCurrentCallParticipants',
-				data: {participants: otherCallParticipants,callID: callID}
+				data: {participants: [],callID: callID,currentUserEmail: email}
 			}
 		)
 
-		return currentCallParticipantsMsg;
+	} catch (err) {
+		console.error(`An error occured when responding to msg of new call participant joining call ${data.callID}: ${err}`,);
+		return;
 	}
-
-	return JSON.stringify(
-		{
-			type: 'responseCurrentCallParticipants',
-			data: {participants: [],callID: callID}
-		}
-	)
 
 
 
@@ -167,7 +174,8 @@ exports.handleICECandidate=(data) => {
 		data: {
 			caller: caller,
 			recipient: recipient,
-			candidate: candidate
+			candidate: candidate,
+			callID: callID
 		}
 	}
 
@@ -176,8 +184,8 @@ exports.handleICECandidate=(data) => {
 }
 
 exports.handleOffer=(data) => {
-	const {caller,recipient,offer,callID}=data;
-	console.log(`User ${caller} sent offer to ${recipient}`);
+	const {offer,recipient,caller,callID}=data;
+	console.log(`User ${caller} sent offer to ${recipient}: ${offer} on call ${callID}`);
 
 	// prepare message format to return to intended recipient
 	const offerMessageToReceipient={
@@ -185,11 +193,29 @@ exports.handleOffer=(data) => {
 		data: {
 			caller: caller,
 			recipient: recipient,
-			offer: offer
+			offer: offer,
+			callID: callID
 		}
 	}
 
 	exports.sendMessageToParticipant(recipient,offerMessageToReceipient,callID);
+}
+
+exports.handleAnswer=(data) => {
+	const {caller,recipient,answer,callID}=data;
+	console.log(`User ${recipient} sent answer to ${caller}`);
+
+	// prepare message format to return to intended recipient
+	const answerMessageToCaller={
+		type: 'answer',
+		data: {
+			caller: caller,
+			recipient: recipient,
+			answer: answer,
+			callID: callID
+		}
+	}
+	exports.sendMessageToParticipant(caller,answerMessageToCaller,callID);
 }
 
 exports.setRandomPort=async () => {
