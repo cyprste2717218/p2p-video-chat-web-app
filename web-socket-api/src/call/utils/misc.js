@@ -20,18 +20,55 @@ exports.getRelevantWSS=async (callID) => {
 	}
 }
 
+exports.participantNotOnCall=async (callID,email) => {
+
+	try {
+		const participant=await CallParticipants.findOne({
+			where: {
+				CallCallID: callID,
+				UserEmail: email,
+			}
+		});
+
+		if (participant) {
+			return;
+		}
+
+
+		const errorMessage=
+		{
+			type: 'error',
+			data: {
+				message: "Message validation error"
+			}
+		};
+
+		return errorMessage;
+
+	} catch (err) {
+		throw new Error("Error checking participant is on call:",err);
+	}
+
+}
+
 exports.verifyClient=(info) => {
 
-	const isProd=process.env.NODE_ENV==="production";
-	if (isProd) {
-		const allowedOrigins=['https://app.example.com']; //update this to vercel domain used
-		if (!allowedOrigins.includes(info.origin)) {
-			console.log(`Rejected unauthorized origin: ${info.origin}`);
-			return false;
+	try {
+
+		const isProd=process.env.NODE_ENV==="production";
+		if (isProd) {
+			const allowedOrigins=['https://app.example.com']; //update this to vercel domain used
+			if (!allowedOrigins.includes(info.origin)) {
+				console.log(`Rejected unauthorized origin: ${info.origin}`);
+				return false;
+			}
+			return true;
 		}
 		return true;
+	} catch (err) {
+		throw new Error("Error occured verifying Origin header on Websocket connection handshake:",err);
 	}
-	return true;
+
 
 }
 
@@ -123,7 +160,7 @@ exports.handleNewCallParticipantMsg=async (data) => {
 		{
 			type: 'receivedNewParticipantNotif',
 			data: {message: `${email} joined chat`,email: email}
-		}
+		};
 
 		console.log("About to call broadcast...");
 		await exports.sendMsgToAllParticipants(newParticipantNotif,callID);
@@ -188,81 +225,137 @@ exports.handleNewCallParticipantMsg=async (data) => {
 }
 
 exports.handleNewParticipantOnCall=async (data,connection) => {
-	// setting new email property on connection (websocket client) object directly for targeting specific messages
-	connection.email=data.email;
 
-	// getting return object to send to client
-	const currentCallParticipantsMsg=await exports.handleNewCallParticipantMsg(data);
-	connection.send(currentCallParticipantsMsg);
+	try {
+		// setting new email property on connection (websocket client) object directly for targeting specific messages
+		connection.email=data.email;
+
+		// getting return object to send to client
+		const currentCallParticipantsMsg=await exports.handleNewCallParticipantMsg(data);
+		connection.send(currentCallParticipantsMsg);
+	} catch (err) {
+		console.error("An error occured forwarding new participant type message:",err);
+	}
+
 }
 
 exports.handleChatMessage=async (data) => {
 
-	const {email,message,callID}=data;
-	const newChatMessage=
-	{
-		type: 'chatMessage',
-		data: {
-			message: message,
-			email: email,
+	try {
+		const {email,message,callID}=data;
+
+		const participantNotOnCallRes=await exports.participantNotOnCall(callID,email);
+
+		if (participantNotOnCallRes) {
+			return exports.sendMessageToParticipant(email,participantNotOnCallRes,callID);
 		}
-	};
 
-	await exports.sendMsgToAllParticipants(newChatMessage,callID);
-}
+		const newChatMessage=
+		{
+			type: 'chatMessage',
+			data: {
+				message: message,
+				email: email,
+			}
+		};
 
-exports.handleICECandidate=(data) => {
-	const {caller,recipient,candidate,callID}=data;
-	console.log(`User ${caller} sent ICE candidate to ${recipient}`);
-
-	// prepare message format to return to intended recipient
-	const iceCandidateForReceipient={
-		type: 'candidate',
-		data: {
-			caller: caller,
-			recipient: recipient,
-			candidate: candidate,
-			callID: callID
-		}
+		await exports.sendMsgToAllParticipants(newChatMessage,callID);
+	} catch (err) {
+		console.error("Error occured forwarding chat message:",err);
 	}
-
-	exports.sendMessageToParticipant(recipient,iceCandidateForReceipient,callID);
 
 }
 
-exports.handleOffer=(data) => {
-	const {offer,recipient,caller,callID}=data;
-	console.log(`User ${caller} sent offer to ${recipient}: ${offer} on call ${callID}`);
+exports.handleICECandidate=async (data) => {
 
-	// prepare message format to return to intended recipient
-	const offerMessageToReceipient={
-		type: 'offer',
-		data: {
-			caller: caller,
-			recipient: recipient,
-			offer: offer,
-			callID: callID
+	try {
+		const {caller,recipient,candidate,callID}=data;
+		console.log(`User ${caller} sent ICE candidate to ${recipient}`);
+
+		const participantNotOnCallRes=await exports.participantNotOnCall(callID,caller);
+
+		if (participantNotOnCallRes) {
+			return exports.sendMessageToParticipant(caller,participantNotOnCallRes,callID);
 		}
+
+
+		// prepare message format to return to intended recipient
+		const iceCandidateForReceipient={
+			type: 'candidate',
+			data: {
+				caller: caller,
+				recipient: recipient,
+				candidate: candidate,
+				callID: callID
+			}
+		}
+
+		exports.sendMessageToParticipant(recipient,iceCandidateForReceipient,callID);
+	} catch (err) {
+		console.error("Error occured forwarding ICE candidate message:",err);
 	}
 
-	exports.sendMessageToParticipant(recipient,offerMessageToReceipient,callID);
+
 }
 
-exports.handleAnswer=(data) => {
-	const {caller,recipient,answer,callID}=data;
-	console.log(`User ${recipient} sent answer to ${caller}`);
+exports.handleOffer=async (data) => {
 
-	// prepare message format to return to intended recipient
-	const answerMessageToCaller={
-		type: 'answer',
-		data: {
-			caller: caller,
-			recipient: recipient,
-			answer: answer,
-			callID: callID
+	try {
+		const {offer,recipient,caller,callID}=data;
+		console.log(`User ${caller} sent offer to ${recipient}: ${offer} on call ${callID}`);
+
+		const participantNotOnCallRes=await exports.participantNotOnCall(callID,caller);
+
+		if (participantNotOnCallRes) {
+			return exports.sendMessageToParticipant(caller,participantNotOnCallRes,callID);
 		}
+
+		// prepare message format to return to intended recipient
+		const offerMessageToReceipient={
+			type: 'offer',
+			data: {
+				caller: caller,
+				recipient: recipient,
+				offer: offer,
+				callID: callID
+			}
+		}
+
+		exports.sendMessageToParticipant(recipient,offerMessageToReceipient,callID);
+	} catch (err) {
+		console.error("Error occured forwarding offer message:",err);
 	}
-	exports.sendMessageToParticipant(caller,answerMessageToCaller,callID);
+
+}
+
+exports.handleAnswer=async (data) => {
+
+	try {
+		const {caller,recipient,answer,callID}=data;
+		console.log(`User ${recipient} sent answer to ${caller}`);
+
+		const participantNotOnCallRes=await exports.participantNotOnCall(callID,caller);
+
+		if (participantNotOnCallRes) {
+			return exports.sendMessageToParticipant(caller,participantNotOnCallRes,callID);
+		}
+
+		// prepare message format to return to intended recipient
+		const answerMessageToCaller={
+			type: 'answer',
+			data: {
+				caller: caller,
+				recipient: recipient,
+				answer: answer,
+				callID: callID
+			}
+		}
+		exports.sendMessageToParticipant(caller,answerMessageToCaller,callID);
+
+	} catch (err) {
+		console.error("Error occured handling forwarding of answer:",err);
+	}
+
 }
 
 exports.setRandomPort=async () => {

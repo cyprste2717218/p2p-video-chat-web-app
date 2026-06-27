@@ -1,7 +1,6 @@
 import {connectToCall,sendChatMessageToCall} from "./rtcUtils.js";
 
-
-const callID=document.getElementById("connect-to-call").value;
+let activeCallID;
 
 const joinCallButton=document.getElementById("connect-button");
 joinCallButton.addEventListener("click",joinCall);
@@ -142,6 +141,7 @@ async function joinCall() {
 	const joinCallButton=document.getElementById("connect-button");
 	joinCallButton.textContent="Joining Call...";
 	const callID=document.getElementById("connect-to-call").value;
+	activeCallID=callID;
 
 	try {
 
@@ -192,6 +192,8 @@ async function createCall() {
 
 		const {callID,callURL}=result;
 
+		activeCallID=callID;
+
 		const currentcallIDDisplay=document.getElementById("current-call-id-display");
 		currentcallIDDisplay.textContent=callID;
 
@@ -208,12 +210,14 @@ async function createCall() {
 }
 
 async function sendChatMessage() {
-	try {
-		const chatMessage=document.getElementById("message").value
-		const callID=document.getElementById("connect-to-call").value;
 
-		const data={message: chatMessage,callID: callID,emailInput: emailInput.value}
+	const chatMessage=document.getElementById("message").value
+
+	try {
+
+		const data={message: chatMessage,callID: activeCallID,emailInput: emailInput.value}
 		sendChatMessageToCall(data);
+
 	} catch (err) {
 		console.error("Error during sending of chat message:",err)
 	}
