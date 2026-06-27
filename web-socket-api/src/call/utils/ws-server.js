@@ -78,7 +78,7 @@ exports.createWebSocketsServer=async () => {
 
 	try {
 
-		wss.push({[callID]: new WebSocketServer({port: portNum})});
+		wss.push({[callID]: new WebSocketServer({port: portNum,perMessageDeflate: false})});
 		//console.log("these are the new Web Socket Server details:",wss);
 
 		const activeWSS=await getRelevantWSS(callID);
