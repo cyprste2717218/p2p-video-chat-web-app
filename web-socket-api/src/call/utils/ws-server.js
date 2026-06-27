@@ -1,7 +1,7 @@
 //require our websocket library 
 var WebSocketServer=require('ws').Server;
 const uuid=require('uuid');
-const {handleOffer,handleAnswer,handleICECandidate,handleNewCallParticipantMsg,broadcast,constructURI,setRandomPort,getRelevantWSS}=require('./misc');
+const {handleNewParticipantOnCall,handleChatMessage,handleOffer,handleAnswer,handleICECandidate,constructURI,setRandomPort,getRelevantWSS}=require('./misc');
 const {wss}=require('./session-store');
 
 
@@ -34,23 +34,12 @@ exports.createWebSocketsServer=async () => {
 
 					switch (type) {
 						case 'newParticipantOnCall':
+							handleNewParticipantOnCall(data,connection)
 
-							// setting new email property on connection (websocket client) object directly for targeting specific messages
-							connection.email=data.email;
-
-							// getting return object to send to client
-							const currentCallParticipantsMsg=await handleNewCallParticipantMsg(data);
-							connection.send(currentCallParticipantsMsg);
 							break;
 						case 'chatMessage':
-							const newChatMessage=
-							{
-								type: 'receivedNewChatMessage',
-								data: {message: data.message}
-							}
+							handleChatMessage(data);
 
-
-							broadcast(newChatMessage);
 							break;
 						case 'offer':
 
@@ -90,11 +79,11 @@ exports.createWebSocketsServer=async () => {
 	try {
 
 		wss.push({[callID]: new WebSocketServer({port: portNum})});
-		console.log("these are the new Web Socket Server details:",wss);
+		//console.log("these are the new Web Socket Server details:",wss);
 
 		const activeWSS=await getRelevantWSS(callID);
 
-		console.log("the created activeWSS:",activeWSS);
+		//console.log("the created activeWSS:",activeWSS);
 
 		await handleServerMessages(activeWSS);
 
@@ -114,13 +103,15 @@ exports.shutDownServer=async (callID) => {
 	console.log('Shutting down WebSocket server...');
 
 	try {
-		wss.callID.clients.forEach((client) => {
+		const activeWSS=await getRelevantWSS(callID);
+
+		activeWSS.clients.forEach((client) => {
 			if (client.readyState===WebSocket.OPEN) {
 				client.close(1001,"Server is shutting down");
 			}
 		});
 
-		wss.callID.close(() => {
+		activeWSS.close(() => {
 			console.log('WebSocket server is completely stopped.');
 		});
 

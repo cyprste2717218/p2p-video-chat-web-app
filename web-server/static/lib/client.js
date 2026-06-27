@@ -1,7 +1,7 @@
-import {getLocalMedia,sendOffer,establishWebSocketServerConn,sendJoiningMessage,attachWSConnListeners} from "./rtcUtils.js";
+import {getLocalMedia,connectToCall,establishWebSocketServerConn,sendJoiningMessage,attachWSConnListeners} from "./rtcUtils.js";
 
-const connectToCallButton=document.getElementById("connect-button");
-connectToCallButton.addEventListener("click",connectToCall);
+const joinCallButton=document.getElementById("connect-button");
+joinCallButton.addEventListener("click",joinCall);
 
 const createCallButton=document.getElementById("create-call-button");
 createCallButton.addEventListener("click",createCall);
@@ -58,7 +58,7 @@ async function register() {
 			throw new Error(result);
 		}
 
-		connectToCallButton.disabled=false;
+		joinCallButton.disabled=false;
 		createCallButton.disabled=false;
 		registerButton.disabled=true;
 		registerButton.textContent="Register";
@@ -90,7 +90,7 @@ async function login() {
 			throw new Error(result);
 		}
 
-		connectToCallButton.disabled=false;
+		joinCallButton.disabled=false;
 		createCallButton.disabled=false;
 		loginButton.disabled=true;
 		loginButton.textContent="Login";
@@ -130,7 +130,7 @@ async function logout() {
 	}
 }
 
-async function connectToCall() {
+async function joinCall() {
 
 	const callID=document.getElementById("connect-to-call").value;
 
@@ -147,17 +147,9 @@ async function connectToCall() {
 
 		const callURL=result;
 
-		// fetch and display local video 
-		await getLocalMedia();
 
-		// establish connection to websocket server created
-		await establishWebSocketServerConn(callURL);
-
-		// set up ws event handlers to respond to messages receieved
-		await attachWSConnListeners(emailInput.value);
-
-		// start connection negotiation process with any current call participants
-		sendJoiningMessage(usernameInput.value,emailInput.value,callID);
+		const data={callURL: callURL,callID: callID,emailInput: emailInput,usernameInput: usernameInput}
+		await connectToCall(data);
 
 		// display currrent call ID connected to in UI
 		const currentcallIDDisplay=document.getElementById("current-call-id-display");
@@ -165,9 +157,6 @@ async function connectToCall() {
 
 		// reset join call button to default text after connection established
 		joinCallButton.textContent="Join Call";
-
-
-
 
 	} catch (err) {
 		joinCallButton.textContent="Join Call";
@@ -201,17 +190,8 @@ async function createCall() {
 
 		createCallButton.textContent="Create Call";
 
-		// fetch and display local video 
-		await getLocalMedia();
-
-		// establish connection to websocket server created
-		await establishWebSocketServerConn(callURL);
-
-		// set up ws event handlers to respond to messages receieved
-		await attachWSConnListeners(emailInput.value);
-
-		// start connection negotiation process with any current call participants
-		sendJoiningMessage(usernameInput.value,emailInput.value,callID);
+		const data={callURL: callURL,callID: callID,emailInput: emailInput,usernameInput: usernameInput}
+		await connectToCall(data);
 
 	} catch (err) {
 		console.error("An error occurred:",err);

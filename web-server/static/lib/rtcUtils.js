@@ -22,6 +22,28 @@ function sendMsg(message) {
 
 }
 
+export async function connectToCall(data) {
+	try {
+
+		const {callURL,callID,emailInput,usernameInput}=data;
+
+		// fetch and display local video 
+		await getLocalMedia();
+
+		// establish connection to websocket server created
+		await establishWebSocketServerConn(callURL);
+
+		// set up ws event handlers to respond to messages receieved
+		await attachWSConnListeners(emailInput.value);
+
+		// start connection negotiation process with any current call participants
+		sendJoiningMessage(usernameInput.value,emailInput.value,callID);
+
+	} catch (err) {
+		console.error(`Error configuring connection to call ${callID}`)
+	}
+}
+
 // Create RTCPeerConnection object for client device
 function createPeerConnection(caller,recipient,callID) {
 

@@ -1,6 +1,7 @@
 const {wss}=require('./session-store');
 const {CallParticipants,Call,Op}=require('../../common/models');
 
+
 exports.getRelevantWSS=async (callID) => {
 
 	try {
@@ -36,7 +37,7 @@ exports.constructURI=async (callID) => {
 	return uri;
 }
 
-exports.broadcast=async (message,callID) => {
+exports.sendMsgToAllParticipants=async (message,callID) => {
 	try {
 		console.log("broadcasting message");
 
@@ -63,6 +64,7 @@ exports.broadcast=async (message,callID) => {
 }
 
 exports.sendMessageToParticipant=async (targetParticipant,message,callID) => {
+
 	try {
 
 		// get correct wss server to send messages to joined participants on
@@ -103,7 +105,7 @@ exports.handleNewCallParticipantMsg=async (data) => {
 		}
 
 		console.log("About to call broadcast...");
-		await exports.broadcast(newParticipantNotif,callID);
+		await exports.sendMsgToAllParticipants(newParticipantNotif,callID);
 
 		// Update status of user from 'pending' to 'active' on the call
 		console.log("this is the callID:",callID);
@@ -162,6 +164,25 @@ exports.handleNewCallParticipantMsg=async (data) => {
 
 
 
+}
+
+exports.handleNewParticipantOnCall=async (data,connection) => {
+	// setting new email property on connection (websocket client) object directly for targeting specific messages
+	connection.email=data.email;
+
+	// getting return object to send to client
+	const currentCallParticipantsMsg=await exports.handleNewCallParticipantMsg(data);
+	connection.send(currentCallParticipantsMsg);
+}
+
+exports.handleChatMessage=async (data) => {
+	const newChatMessage=
+	{
+		type: 'receivedNewChatMessage',
+		data: {message: data.message}
+	};
+
+	await exports.broadcast(newChatMessage);
 }
 
 exports.handleICECandidate=(data) => {
