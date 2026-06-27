@@ -231,52 +231,67 @@ export async function establishWebSocketServerConn(callURL) {
 export async function attachWSConnListeners(callerEmail) {
 
 	function handleNewParticipantNotif(data) {
-		const chatMessage=data.message;
 
-		// update DOM with message on new chat participant joining and/or new chat message
-		const chatMessagesContainer=document.getElementById('chat-messages');
-		const newPara=document.createElement('p');
+		try {
+			const chatMessage=data.message;
+			const sender=data.email;
 
-		newPara.textContent=chatMessage;
-		chatMessagesContainer.appendChild(newPara);
+			const combinedMsg=`${sender}: ${chatMessage}`
+
+			// update DOM with message on new chat participant joining and/or new chat message
+			const chatMessagesContainer=document.getElementById('chat-messages');
+			const newPara=document.createElement('p');
+
+			newPara.textContent=combinedMsg;
+			chatMessagesContainer.appendChild(newPara);
+		} catch (err) {
+			console.error("An error occured during screen update for new message on call:",err);
+		}
+
 	}
 
 	function handleResponseCurrentCallParticipants(data) {
-		if (data.participants.length>0) {
 
-			// Update memory of other participants currently on call
-			const {participants,callID,currentUserEmail}=data;
-			console.log("callID is:",callID);
-			participants.forEach(participant => {
-				otherCallParticipants.push(participant);
-			})
+		try {
+			if (data.participants.length>0) {
 
-			const callerText=callerEmail;
-			console.log("The receievedParticipants arr:",participants,"The caller email:",callerEmail);
+				// Update memory of other participants currently on call
+				const {participants,callID,currentUserEmail}=data;
+				console.log("callID is:",callID);
+				participants.forEach(participant => {
+					otherCallParticipants.push(participant);
+				})
 
-			otherCallParticipants.forEach(async participant => {
-				console.log("callerText:",callerText,"participant:",participant);
-				const createdOffer=await sendOffer(currentUserEmail,participant,callID);
-				sendMsg(createdOffer);
-			});
+				const callerText=callerEmail;
+				console.log("The receievedParticipants arr:",participants,"The caller email:",callerEmail);
 
-			// Update DOM to display current participants on call being joined
-			const currentParticipantsContainer=document.getElementById('call-participants-list');
+				otherCallParticipants.forEach(async participant => {
+					console.log("callerText:",callerText,"participant:",participant);
+					const createdOffer=await sendOffer(currentUserEmail,participant,callID);
+					sendMsg(createdOffer);
+				});
 
-			otherCallParticipants.map((participantName) => {
-				const newPara=document.createElement('p');
+				// Update DOM to display current participants on call being joined
+				const currentParticipantsContainer=document.getElementById('call-participants-list');
 
-				newPara.textContent=participantName;
+				otherCallParticipants.map((participantName) => {
+					const newPara=document.createElement('p');
 
-				currentParticipantsContainer.appendChild(newPara);
-			})
+					newPara.textContent=participantName;
 
+					currentParticipantsContainer.appendChild(newPara);
+				})
+
+			}
+		} catch (err) {
+			console.error("An error occured handling receieved call participants names");
 		}
+
 	}
 
 	async function handleReceivedOffer(data) {
 
-		async function createAnswer(currentUserEmail,caller,recipient,offer) {
+		async function createAnswer(currentUserEmail,caller,recipient,offer,callID) {
 
 			function handleGetUserMediaError() {
 				/* To be implemented */
@@ -329,59 +344,75 @@ export async function attachWSConnListeners(callerEmail) {
 			return activePeerConnection.localDescription;
 		}
 
-		const {currentUserEmail,caller,recipient,offer,callID}=data;
-		console.log("the callID before sending answer message:",callID);
-		console.log("sending answer message...");
+		try {
+			const {currentUserEmail,caller,recipient,offer,callID}=data;
+			console.log("the callID before sending answer message:",callID);
+			console.log("sending answer message...");
 
-		const createdAnswer=await createAnswer(currentUserEmail,caller,recipient,offer);
-		const answerMsg={type: "answer",data: {caller: caller,recipient: recipient,answer: createdAnswer,callID: callID}}
-		sendMsg(answerMsg);
+			const createdAnswer=await createAnswer(currentUserEmail,caller,recipient,offer,callID);
+			const answerMsg={type: "answer",data: {caller: caller,recipient: recipient,answer: createdAnswer,callID: callID}}
+			sendMsg(answerMsg);
 
-		console.log("sent answer message:",createdAnswer)
-
+			console.log("sent answer message:",createdAnswer)
+		} catch (err) {
+			console.error("An error occured handling recieved offer:",err);
+		}
 	}
 
 	async function handleReceievedICECandidate(data) {
 
-		console.log("receieved ICE candidate:",data.candidate);
-		const {candidate,recipient}=data;
-		const peerConnectionIndex=peerConnectionsArr.findIndex(peerConection => peerConection.recipient===recipient);
+		try {
+			console.log("receieved ICE candidate:",data.candidate);
+			const {candidate,recipient}=data;
+			const peerConnectionIndex=peerConnectionsArr.findIndex(peerConection => peerConection.recipient===recipient);
 
 
-		if (!peerConnectionsArr[peerConnectionIndex]) {
-			throw new Error("No peer connection object exists");
+			if (!peerConnectionsArr[peerConnectionIndex]) {
+				throw new Error("No peer connection object exists");
+			}
+
+
+			const candidateObj=new RTCIceCandidate(candidate);
+			peerConnectionsArr[peerConnectionIndex].addIceCandidate(candidateObj);
+		} catch (err) {
+			console.error("An error occured handling recieved ICE candidate message:",err);
 		}
 
 
-		const candidateObj=new RTCIceCandidate(candidate);
-		peerConnectionsArr[peerConnectionIndex].addIceCandidate(candidateObj);
 	}
 
 	async function handleReceivedAnswer(data) {
-		const {currentUserEmail,caller,recipient,answer,callID}=data;
-		console.log(`received answer message from ${recipient}: ${answer}`);
 
-		// find and retrieve relevant RTCPeerConnection object
-		let activePeerConnection;
-		const {currentPeerConnection,peerConnectionIndex}=isExistingPeerConnection(caller,recipient,callID);
+		try {
+			const {currentUserEmail,caller,recipient,answer,callID}=data;
+			console.log(`received answer message from ${recipient}: ${answer}`);
 
-		if (!currentPeerConnection||peerConnectionIndex===undefined||peerConnectionIndex===-1) {
-			throw new Error("No peerConnection retrieved or no index for correct peer connection obj in offer creation");
+			// find and retrieve relevant RTCPeerConnection object
+			let activePeerConnection;
+			const {currentPeerConnection,peerConnectionIndex}=isExistingPeerConnection(caller,recipient,callID);
+
+			if (!currentPeerConnection||peerConnectionIndex===undefined||peerConnectionIndex===-1) {
+				throw new Error("No peerConnection retrieved or no index for correct peer connection obj in offer creation");
+			}
+			activePeerConnection=currentPeerConnection;
+
+			// create RTCSessionDescription object
+			const sessionDescObj={
+				type: answer.type,
+				sdp: answer.sdp
+			}
+
+			console.log(`Setting remote description for connection with ${recipient}...`)
+			// set remote description on created RTCPeerConnection object
+			activePeerConnection.setRemoteDescription(sessionDescObj);
+			console.log(`Remote description has been set for connection with ${recipient}`);
+
+			peerConnectionsArr[peerConnectionIndex]=activePeerConnection;
+
+		} catch (err) {
+			console.error("An error occured handling received answer:",err);
 		}
-		activePeerConnection=currentPeerConnection;
 
-		// create RTCSessionDescription object
-		const sessionDescObj={
-			type: answer.type,
-			sdp: answer.sdp
-		}
-
-		console.log(`Setting remote description for connection with ${recipient}...`)
-		// set remote description on created RTCPeerConnection object
-		activePeerConnection.setRemoteDescription(sessionDescObj);
-		console.log(`Remote description has been set for connection with ${recipient}`);
-
-		peerConnectionsArr[peerConnectionIndex]=activePeerConnection;
 
 	}
 
@@ -399,7 +430,7 @@ export async function attachWSConnListeners(callerEmail) {
 		switch (type) {
 			case 'receivedNewParticipantNotif':
 			case 'chatMessage':
-				handleNewParticipantNotif(data);
+				handleNewParticipantNotif(data); //To-do: create separate handlers, or rename this func to reflect chat message handling function
 
 				break;
 			case 'responseCurrentCallParticipants':
@@ -441,4 +472,26 @@ export function sendJoiningMessage(usernameInput,emailInput,callID) {
 		});
 
 	}
+}
+
+export function sendChatMessageToCall(data) {
+
+	try {
+		if (websocket) {
+
+			const {message,callID,emailInput}=data;
+
+			console.log("Established websocket server connection succesfully");
+			console.log(`sending chat message, email: ${emailInput}, callID: ${callID}`);
+			const msg={
+				"type": "chatMessage",
+				"data": {email: emailInput,message: message,callID: callID}
+			};
+
+			return sendMsg(msg);
+		}
+	} catch (err) {
+		console.error("An error occured sending chat message:",err);
+	}
+
 }

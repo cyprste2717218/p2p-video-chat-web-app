@@ -101,7 +101,7 @@ exports.handleNewCallParticipantMsg=async (data) => {
 		const newParticipantNotif=
 		{
 			type: 'receivedNewParticipantNotif',
-			data: {message: `${email} joined chat`}
+			data: {message: `${email} joined chat`,email: email}
 		}
 
 		console.log("About to call broadcast...");
@@ -176,13 +176,18 @@ exports.handleNewParticipantOnCall=async (data,connection) => {
 }
 
 exports.handleChatMessage=async (data) => {
+
+	const {email,message,callID}=data;
 	const newChatMessage=
 	{
-		type: 'receivedNewChatMessage',
-		data: {message: data.message}
+		type: 'chatMessage',
+		data: {
+			message: message,
+			email: email,
+		}
 	};
 
-	await exports.broadcast(newChatMessage);
+	await exports.sendMsgToAllParticipants(newChatMessage,callID);
 }
 
 exports.handleICECandidate=(data) => {

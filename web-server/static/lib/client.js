@@ -1,4 +1,7 @@
-import {getLocalMedia,connectToCall,establishWebSocketServerConn,sendJoiningMessage,attachWSConnListeners} from "./rtcUtils.js";
+import {connectToCall,sendChatMessageToCall} from "./rtcUtils.js";
+
+
+const callID=document.getElementById("connect-to-call").value;
 
 const joinCallButton=document.getElementById("connect-button");
 joinCallButton.addEventListener("click",joinCall);
@@ -18,9 +21,13 @@ loginButton.addEventListener("click",login);
 const logoutButton=document.getElementById("logout-button");
 logoutButton.addEventListener("click",logout);
 
+const sendChatMsgButton=document.getElementById("send-message");
+sendChatMsgButton.addEventListener("click",sendChatMessage)
+
 const usernameInput=document.getElementById("username");
 const emailInput=document.getElementById("email");
 const passwordInput=document.getElementById("password");
+
 
 const tokenWorker=new Worker('../token-worker.js',{type: "module"});
 
@@ -132,12 +139,12 @@ async function logout() {
 
 async function joinCall() {
 
-	const callID=document.getElementById("connect-to-call").value;
-
 	const joinCallButton=document.getElementById("connect-button");
 	joinCallButton.textContent="Joining Call...";
+	const callID=document.getElementById("connect-to-call").value;
 
 	try {
+
 		const result=await getWorkerResponse("ReqJoinCall","ResJoinCall",callID);
 
 		if (result==="Join new call failed") {
@@ -198,5 +205,17 @@ async function createCall() {
 		createCallButton.textContent="Create Call";
 	}
 
+}
+
+async function sendChatMessage() {
+	try {
+		const chatMessage=document.getElementById("message").value
+		const callID=document.getElementById("connect-to-call").value;
+
+		const data={message: chatMessage,callID: callID,emailInput: emailInput.value}
+		sendChatMessageToCall(data);
+	} catch (err) {
+		console.error("Error during sending of chat message:",err)
+	}
 }
 
