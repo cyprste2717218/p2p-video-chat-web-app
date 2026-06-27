@@ -41,7 +41,7 @@ exports.sendMsgToAllParticipants=async (message,callID) => {
 	try {
 		console.log("broadcasting message");
 
-		console.log("this is the current wss:",wss);
+		//console.log("this is the current wss:",wss);
 
 		// get correct wss server to send messages to joined participants on
 		const activeWSS=await exports.getRelevantWSS(callID);
@@ -71,7 +71,7 @@ exports.sendMessageToParticipant=async (targetParticipant,message,callID) => {
 		const activeWSS=await exports.getRelevantWSS(callID);
 
 		if (activeWSS.clients) {
-			console.log("these are the activeWSS clients:",activeWSS.clients);
+			//console.log("these are the activeWSS clients:",activeWSS.clients);
 
 
 			const participant=[...activeWSS.clients].find(client => client.email===targetParticipant);

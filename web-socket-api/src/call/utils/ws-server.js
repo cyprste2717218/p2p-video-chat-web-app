@@ -30,7 +30,7 @@ exports.createWebSocketsServer=async () => {
 						data=parsedMessage.data;
 					}
 
-					console.log("this is the data:",data);
+					//console.log("this is the data:",data);
 
 					switch (type) {
 						case 'newParticipantOnCall':
