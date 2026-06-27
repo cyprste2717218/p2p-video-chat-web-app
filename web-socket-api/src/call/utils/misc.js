@@ -23,7 +23,7 @@ exports.getRelevantWSS=async (callID) => {
 exports.constructURI=async (callID) => {
 
 	// constructing URI of WS server created
-
+	const isProd=process.env.NODE_ENV==="production";
 
 	const relevantWSS=await exports.getRelevantWSS(callID);
 	const addressInfo=relevantWSS.address();
@@ -31,7 +31,13 @@ exports.constructURI=async (callID) => {
 	const host=addressInfo.address==='::'? 'localhost':addressInfo.address;
 	const port=addressInfo.port;
 
-	const uri=`ws://${host}:${port}`;
+	let uri;
+	if (isProd) {
+		uri=`wss://${host}:${port}`;
+	} else {
+		uri=`ws://${host}:${port}`;
+	}
+
 
 	console.log("this is the uri:",uri);
 	return uri;
@@ -248,15 +254,23 @@ exports.setRandomPort=async () => {
 	function generateRandomPort() {
 		return Math.floor(1000+Math.random()*9000);
 	}
+	const isProd=process.env.NODE_ENV==="production";
 
 	let randomPort;
 	try {
 		// checking new port does not conflict with existing WS server
 		const generatedPort=generateRandomPort();
+		let targetWSUrl;
+
+		if (isProd) {
+			targetWSUrl=`wss://localhost:${generatedPort}`
+		} else {
+			targetWSUrl=`ws://localhost:${generatedPort}`
+		}
 
 		const isURLTaken=await Call.findOne({
 			where: {
-				callURL: `ws://localhost:${generatedPort}`
+				callURL: targetWSUrl
 			}
 		});
 
@@ -271,7 +285,7 @@ exports.setRandomPort=async () => {
 			throw new Error(err);
 		}
 
-		const portNum=setRandomPort();
+		const portNum=exports.setRandomPort();
 		randomPort=portNum;
 
 	}
