@@ -20,6 +20,21 @@ exports.getRelevantWSS=async (callID) => {
 	}
 }
 
+exports.verifyClient=(info) => {
+
+	const isProd=process.env.NODE_ENV==="production";
+	if (isProd) {
+		const allowedOrigins=['https://app.example.com']; //update this to vercel domain used
+		if (!allowedOrigins.includes(info.origin)) {
+			console.log(`Rejected unauthorized origin: ${info.origin}`);
+			return false;
+		}
+		return true;
+	}
+	return true;
+
+}
+
 exports.constructURI=async (callID) => {
 
 	// constructing URI of WS server created

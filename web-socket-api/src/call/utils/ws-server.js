@@ -1,7 +1,7 @@
 //require our websocket library 
 var WebSocketServer=require('ws').Server;
 const uuid=require('uuid');
-const {handleNewParticipantOnCall,handleChatMessage,handleOffer,handleAnswer,handleICECandidate,constructURI,setRandomPort,getRelevantWSS}=require('./misc');
+const {handleNewParticipantOnCall,handleChatMessage,handleOffer,handleAnswer,handleICECandidate,constructURI,setRandomPort,getRelevantWSS,verifyClient}=require('./misc');
 const {wss}=require('./session-store');
 
 
@@ -78,7 +78,7 @@ exports.createWebSocketsServer=async () => {
 
 	try {
 
-		wss.push({[callID]: new WebSocketServer({port: portNum,perMessageDeflate: false})});
+		wss.push({[callID]: new WebSocketServer({port: portNum,perMessageDeflate: false,verifyClient: (info) => verifyClient(info)})});
 		//console.log("these are the new Web Socket Server details:",wss);
 
 		const activeWSS=await getRelevantWSS(callID);
