@@ -160,10 +160,13 @@ async function handleCreateCall() {
 			"Authorization": `Bearer ${tokenService.getToken()}`
 		}
 	});
+	console.log("this is the access token:",tokenService.getToken());
+	console.log("this is the result of the createCall fetch:",result);
 
 	if (result.ok) {
 
 		const dataBody=await result.json();
+
 
 		const {success,data}=dataBody;
 

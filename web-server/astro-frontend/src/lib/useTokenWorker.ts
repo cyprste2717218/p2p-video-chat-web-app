@@ -1,63 +1,46 @@
-import { useRef } from "react";
+let workerInstance: Worker|null=null;
 
-type WorkerRequest =
-  | { type: "ReqLogin"; body: object }
-  | { type: "ReqSignup"; body: object }
-  | { type: "ReqLogout"; body?: undefined }
-  | { type: "ReqCreateCall"; body?: undefined }
-  | { type: "ReqJoinCall"; body: string }
-  | { type: "ReqLeaveCall"; body?: undefined };
+function getWorker(): Worker {
+  if (!workerInstance) {
+    workerInstance=new Worker("/token-worker.js",{type: "module"});
+  }
+  return workerInstance;
+}
 
-function ask(worker: Worker, reqType: string, resType: string, body?: unknown): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    const handler = (event: MessageEvent) => {
-      if (event.data.type === resType) {
-        worker.removeEventListener("message", handler);
+function ask(reqType: string,resType: string,body?: unknown): Promise<unknown> {
+  return new Promise((resolve) => {
+    const worker=getWorker();
+    const handler=(event: MessageEvent) => {
+      if (event.data.type===resType) {
+        worker.removeEventListener("message",handler);
         resolve(event.data.message);
-      } else {
-        worker.removeEventListener("message", handler);
-        reject(new Error(`Unexpected response type: ${event.data.type}`));
       }
     };
-    worker.addEventListener("message", handler);
-    worker.postMessage({ messageType: reqType, requestBody: body });
+    worker.addEventListener("message",handler);
+    worker.postMessage({messageType: reqType,requestBody: body});
   });
 }
 
 export function useTokenWorker() {
-  const workerRef = useRef<Worker | null>(null);
-
-  function getWorker(): Worker {
-    if (!workerRef.current) {
-      workerRef.current = new Worker("/token-worker.js", { type: "module" });
-    }
-    return workerRef.current;
+  async function login(email: string,password: string): Promise<string> {
+    return ask("ReqLogin","ResLogin",{email,password}) as Promise<string>;
   }
 
-  async function login(email: string, password: string): Promise<string> {
-    const result = await ask(getWorker(), "ReqLogin", "ResLogin", { email, password });
-    return result as string;
-  }
-
-  async function register(username: string, email: string, password: string): Promise<string> {
-    const result = await ask(getWorker(), "ReqSignup", "ResSignup", { username, email, password });
-    return result as string;
+  async function register(username: string,email: string,password: string): Promise<string> {
+    return ask("ReqSignup","ResSignup",{username,email,password}) as Promise<string>;
   }
 
   async function logout(): Promise<string> {
-    const result = await ask(getWorker(), "ReqLogout", "ResLogout");
-    return result as string;
+    return ask("ReqLogout","ResLogout") as Promise<string>;
   }
 
-  async function createCall(): Promise<{ callID: string; callURL: string }> {
-    const result = await ask(getWorker(), "ReqCreateCall", "ResCreateCall");
-    return result as { callID: string; callURL: string };
+  async function createCall(): Promise<{callID: string; callURL: string}> {
+    return ask("ReqCreateCall","ResCreateCall") as Promise<{callID: string; callURL: string}>;
   }
 
   async function joinCall(callID: string): Promise<string> {
-    const result = await ask(getWorker(), "ReqJoinCall", "ResJoinCall", callID);
-    return result as string;
+    return ask("ReqJoinCall","ResJoinCall",callID) as Promise<string>;
   }
 
-  return { login, register, logout, createCall, joinCall };
+  return {login,register,logout,createCall,joinCall};
 }

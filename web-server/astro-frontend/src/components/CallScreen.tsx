@@ -1,15 +1,15 @@
-import React, { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { useTokenWorker } from "@/lib/useTokenWorker";
-import { connectToCall, sendChatMessageToCall } from "@/lib/rtcUtils";
+import React,{useRef,useState} from "react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Badge} from "@/components/ui/badge";
+import {Separator} from "@/components/ui/separator";
+import {useTokenWorker} from "@/lib/useTokenWorker";
+import {connectToCall,sendChatMessageToCall} from "@/lib/rtcUtils";
 import VideoGrid from "@/components/VideoGrid";
 import ChatPanel from "@/components/ChatPanel";
-import { PhoneOff, Video, LogOut } from "lucide-react";
+import {PhoneOff,Video,LogOut} from "lucide-react";
 
-interface RemoteStream { peerUser: string; stream: MediaStream; }
+interface RemoteStream {peerUser: string; stream: MediaStream;}
 
 interface CallScreenProps {
   email: string;
@@ -17,24 +17,24 @@ interface CallScreenProps {
   onLogout: () => void;
 }
 
-export default function CallScreen({ email, username, onLogout }: CallScreenProps) {
-  const { createCall, joinCall, logout } = useTokenWorker();
-  const localVideoRef = useRef<HTMLVideoElement>(null);
+export default function CallScreen({email,username,onLogout}: CallScreenProps) {
+  const {createCall,joinCall,logout}=useTokenWorker();
+  const localVideoRef=useRef<HTMLVideoElement>(null);
 
-  const [activeCallID, setActiveCallID] = useState<string | null>(null);
-  const [joinInput, setJoinInput] = useState("");
-  const [messages, setMessages] = useState<string[]>([]);
-  const [participants, setParticipants] = useState<string[]>([]);
-  const [remoteStreams, setRemoteStreams] = useState<RemoteStream[]>([]);
-  const [loading, setLoading] = useState<"create" | "join" | null>(null);
-  const [error, setError] = useState("");
+  const [activeCallID,setActiveCallID]=useState<string|null>(null);
+  const [joinInput,setJoinInput]=useState("");
+  const [messages,setMessages]=useState<string[]>([]);
+  const [participants,setParticipants]=useState<string[]>([]);
+  const [remoteStreams,setRemoteStreams]=useState<RemoteStream[]>([]);
+  const [loading,setLoading]=useState<"create"|"join"|null>(null);
+  const [error,setError]=useState("");
 
-  function addChatMessage(msg: string) { setMessages((prev) => [...prev, msg]); }
-  function addParticipant(name: string) { setParticipants((prev) => [...prev, name]); }
-  function addRemoteVideo(peerUser: string, stream: MediaStream) {
+  function addChatMessage(msg: string) {setMessages((prev) => [...prev,msg]);}
+  function addParticipant(name: string) {setParticipants((prev) => [...prev,name]);}
+  function addRemoteVideo(peerUser: string,stream: MediaStream) {
     setRemoteStreams((prev) => {
-      if (prev.find((s) => s.peerUser === peerUser)) return prev;
-      return [...prev, { peerUser, stream }];
+      if (prev.find((s) => s.peerUser===peerUser)) return prev;
+      return [...prev,{peerUser,stream}];
     });
   }
 
@@ -42,11 +42,12 @@ export default function CallScreen({ email, username, onLogout }: CallScreenProp
     setError("");
     setLoading("create");
     try {
-      const result = await createCall();
-      if ((result as unknown) === "Create new call failed") throw new Error("Create new call failed");
-      const { callID, callURL } = result;
+      const result=await createCall();
+      console.log("result of createCall:",result);
+      if ((result as unknown)==="Create new call failed") throw new Error("Create new call failed");
+      const {callID,callURL}=result;
       setActiveCallID(callID);
-      await connectToCall(callURL, callID, email, username, localVideoRef, addChatMessage, addParticipant, addRemoteVideo);
+      await connectToCall(callURL,callID,email,username,localVideoRef,addChatMessage,addParticipant,addRemoteVideo);
     } catch {
       setError("Failed to create call.");
     } finally {
@@ -59,10 +60,10 @@ export default function CallScreen({ email, username, onLogout }: CallScreenProp
     setError("");
     setLoading("join");
     try {
-      const callURL = await joinCall(joinInput.trim());
-      if (callURL === "Join new call failed") throw new Error("Join new call failed");
+      const callURL=await joinCall(joinInput.trim());
+      if (callURL==="Join new call failed") throw new Error("Join new call failed");
       setActiveCallID(joinInput.trim());
-      await connectToCall(callURL as string, joinInput.trim(), email, username, localVideoRef, addChatMessage, addParticipant, addRemoteVideo);
+      await connectToCall(callURL as string,joinInput.trim(),email,username,localVideoRef,addChatMessage,addParticipant,addRemoteVideo);
     } catch {
       setError("Failed to join call. Check the call ID.");
     } finally {
@@ -75,7 +76,7 @@ export default function CallScreen({ email, username, onLogout }: CallScreenProp
     onLogout();
   }
 
-  const inCall = Boolean(activeCallID);
+  const inCall=Boolean(activeCallID);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
@@ -86,7 +87,7 @@ export default function CallScreen({ email, username, onLogout }: CallScreenProp
           <span className="font-semibold text-zinc-100">VideoChat</span>
         </div>
         <div className="flex items-center gap-3">
-          {activeCallID && (
+          {activeCallID&&(
             <Badge variant="outline" className="border-zinc-600 text-zinc-300 font-mono text-xs">
               {activeCallID}
             </Badge>
@@ -105,14 +106,14 @@ export default function CallScreen({ email, username, onLogout }: CallScreenProp
       </header>
 
       {/* Controls bar — hidden once in a call */}
-      {!inCall && (
+      {!inCall&&(
         <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-b border-zinc-800">
           <Button
             onClick={handleCreate}
-            disabled={loading !== null}
+            disabled={loading!==null}
             className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
           >
-            {loading === "create" ? "Creating…" : "Create Call"}
+            {loading==="create"? "Creating…":"Create Call"}
           </Button>
 
           <Separator orientation="vertical" className="h-6 bg-zinc-700" />
@@ -126,22 +127,22 @@ export default function CallScreen({ email, username, onLogout }: CallScreenProp
             />
             <Button
               onClick={handleJoin}
-              disabled={loading !== null || !joinInput.trim()}
+              disabled={loading!==null||!joinInput.trim()}
               variant="outline"
               className="border-zinc-700 text-zinc-100 hover:bg-zinc-800"
             >
-              {loading === "join" ? "Joining…" : "Join Call"}
+              {loading==="join"? "Joining…":"Join Call"}
             </Button>
           </div>
 
-          {error && <p className="text-sm text-red-400 w-full">{error}</p>}
+          {error&&<p className="text-sm text-red-400 w-full">{error}</p>}
         </div>
       )}
 
       {/* Main area */}
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col gap-4 p-6 overflow-y-auto">
-          {inCall && (
+          {inCall&&(
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="border-zinc-600 text-zinc-300 font-mono text-xs">
                 Call ID: {activeCallID}
@@ -169,7 +170,7 @@ export default function CallScreen({ email, username, onLogout }: CallScreenProp
           <ChatPanel
             messages={messages}
             participants={participants}
-            onSend={(msg) => activeCallID && sendChatMessageToCall(msg, activeCallID, email)}
+            onSend={(msg) => activeCallID&&sendChatMessageToCall(msg,activeCallID,email)}
           />
         </div>
       </div>
