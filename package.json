@@ -4,8 +4,8 @@
   "description": "Video chat application",
   "main": "other.js",
   "scripts": {
-    "run-video-chat-frontend": "cd web-server/astro-frontend && npm run dev",
-    "build-video-chat-frontend": "cd web-server/astro-frontend && npm run build",
+    "run-video-chat-frontend": "cd web-server && npm run dev",
+    "build-video-chat-frontend": "cd web-server && npm run build",
     "run-signalling-api": "cd web-socket-api/src && node --env-file=.env app.js",
     "test": "xo",
     "prepare": "husky install"
