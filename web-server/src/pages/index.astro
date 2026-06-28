@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import App from "../components/App";
+const nonce = Astro.locals.nonce;
 ---
 
 <!doctype html>
@@ -8,8 +9,9 @@ import App from "../components/App";
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="csp-nonce" content={nonce} />
     <title>VideoChat</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" nonce={nonce} />
   </head>
   <body>
     <App client:load />
