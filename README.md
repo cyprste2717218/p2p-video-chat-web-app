@@ -12,7 +12,7 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
 
-A peer-to-peer video chat application with a browser-based UI and a Node.js signalling stack. Users create or join calls through an Express.js API, which provisions per-call WebSocket servers for session coordination. WebRTC handles media between peers once signalling completes.
+A peer-to-peer video chat application built with an Astro/React frontend and a Node.js signalling stack. Users authenticate then create or join calls through an Express.js API, which provisions per-call WebSocket servers for session coordination. WebRTC handles media between peers once signalling completes.
 
 ## Overview
 
@@ -20,12 +20,10 @@ This project demonstrates a classic WebRTC architecture: an HTTP API and WebSock
 
 Typical flow:
 
-1. A user opens the static web app and creates a call (or joins with a call ID).
+1. A user opens the app, authenticates (login or register), then creates a call or joins one with a call ID.
 2. The Express API spins up a dedicated WebSocket server for that call and returns its URL.
 3. The client connects to that WebSocket server and exchanges signalling messages (participants, offers, chat).
-4. WebRTC negotiation runs in the browser (`rtcUtils.js`) to establish P2P video/audio where implemented.
-
-Note: Handling of receieved access token JWTs on the client side is not implemented yet, will need to implement Web workers on non-main thread on frontend.
+4. WebRTC negotiation runs in the browser (`rtcUtils.ts`) to establish P2P video/audio where implemented.
 
 ## Project Structure
 
@@ -43,14 +41,27 @@ video-chat-application/
 │   └── tests/ 
 │       ├── e2e/             # End-to-end tests (Chains of API calls following user journeys)        
 │       ├── it/              # Integration tests 
-│       ├── unit/            # Unit tests (Contract API endpoint tests)     
-├── web-server/              # HTTP static file server for the web UI
-│   ├── server.js            # Serves files from ./static (port 8000)
-│   └── static/
-│       ├── index.html       # Video chat UI
-│       └── lib/
-│           ├── client.js    # UI logic, REST + WebSocket client
-│           └── rtcUtils.js  # WebRTC helpers (media, offers, peer connection)
+│       └── unit/            # Unit tests (Contract API endpoint tests)     
+├── web-server/              # Astro.js frontend (SSR, React + Tailwind + shadcn/ui)
+│   ├── public/
+│   │   └── token-worker.js  # Web Worker: token storage + all API fetch calls
+│   └── src/
+│       ├── pages/
+│       │   └── index.astro  # Shell page — imports global CSS, renders <App client:load />
+│       ├── components/
+│       │   ├── App.tsx           # Root — switches between AuthScreen / CallScreen
+│       │   ├── AuthScreen.tsx    # Login + register tabs (shown when logged out)
+│       │   ├── CallScreen.tsx    # Create/join call controls, video grid, chat sidebar
+│       │   ├── VideoGrid.tsx     # Local + remote video tiles
+│       │   ├── ChatPanel.tsx     # Chat message list + send input
+│       │   └── ui/               # shadcn/ui primitives (button, card, input, tabs, …)
+│       ├── lib/
+│       │   ├── rtcUtils.ts       # WebRTC helpers (media, peer connections, WS messaging)
+│       │   ├── useTokenWorker.ts # Hook — module-level singleton Worker, exposes auth/call actions
+│       │   └── utils.ts          # shadcn cn() class utility
+│       ├── styles/
+│       │   └── global.css        # Tailwind v4 + shadcn CSS variable theme
+│       └── middleware.ts         # CSP header (nonce-based, skipped in dev mode)
 └── package.json             # Root scripts to run both servers
 ```
 
@@ -58,7 +69,7 @@ video-chat-application/
 | Component                             | Role                                                                                       |
 | ------------------------------------- | ------------------------------------------------------------------------------------------ |
 | **Express.js API** (`web-socket-api`) | REST signalling: auth, users, call lifecycle; creates in-memory WebSocket servers per call |
-| **HTTP web server** (`web-server`)    | Serves vanilla HTML/CSS/JS for the video chat interface                                    |
+| **Astro frontend** (`web-server`)     | SSR Astro app with React components, Tailwind CSS, and shadcn/ui; port **4321** in dev     |
 
 
 ## Local Setup
@@ -94,16 +105,16 @@ Alternatively, from the repo root:
 npm run run-signalling-api
 ```
 
-### 3. Run the static HTTP server
+### 3. Run the Astro frontend
 
-The static server resolves files relative to **current working directory** `./static`, so run it from `web-server`:
+From the `web-server` directory:
 
 ```bash
 cd ../web-server
-node server.js
+npm run dev
 ```
 
-App URL: **[http://localhost:8000/](http://localhost:8000/)**
+App URL: **[http://localhost:4321/](http://localhost:4321/)**
 
 From the repo root:
 
@@ -280,33 +291,23 @@ A `.env.example` file has been defined using these defaults for local tesing.
 
 ---
 
-## Static Site & Client (HTTP server)
+## Frontend (Astro + React)
 
-**Server:** `web-server/server.js` — Node `http` module, port **8000**, serves `web-server/static/`.
+**Framework:** Astro (SSR via `@astrojs/node`), port **4321** in dev (`npm run dev` from `web-server/`).
 
-**Entry:** `index.html` loads `lib/client.js` as an ES module.
+**Entry:** `src/pages/index.astro` imports global CSS and renders `<App client:load />`.
 
-### `client.js`
+### `useTokenWorker.ts`
 
-Orchestrates the UI and signalling client:
+Hook that wraps the `token-worker.js` Web Worker. The Worker instance is a **module-level singleton** so all components share the same instance and the token stored after login is available to subsequent calls. Exposes: `login`, `register`, `logout`, `createCall`, `joinCall`.
 
-- **Create call** — `POST` to `/call/create` with username; displays `callId`; calls `getLocalMedia()`; opens WebSocket to `callURL`; on `open`, sends `newParticipantOnCall`.
-- **Join call** — `PUT` to `/call/:callId/join`; same media + WebSocket flow.
-- **WebSocket `message` handler** — switches on `type`:
-  - Chat / join notifications → append to `#chat-messages`
-  - `responseCurrentCallParticipants` → for each peer, `sendOffer()` and send resulting message over WebSocket; update participant list in the DOM
-  - `offer` — logged (answer/ICE handling not fully wired)
-- **Hang up** — stub (`hangUpCall` empty)
+### `token-worker.js`
 
-### `rtcUtils.js`
+Plain JS Web Worker served from `public/`. Owns the `TokenService` class which holds the JWT access token in a private field. Handles all `fetch` calls to the Express API so the token never touches the main thread.
 
-WebRTC and media utilities:
+### CSP middleware (`src/middleware.ts`)
 
-- `getLocalMedia()` — `navigator.mediaDevices.getUserMedia({ audio: true, video: true })`, attaches stream to `#local_video`. Throws if called when media is already being captured.
-- `sendOffer(caller, recipient)` — creates `RTCPeerConnection` with STUN `stun:stun.stunprotocol.org`, adds local tracks, calls `createOffer()` / `setLocalDescription()`, returns a signalling message `{ type: 'offer', data: { offer, recipient, caller } }` for the WebSocket layer.
-- `createPeerConnection()` — sets up `RTCPeerConnection` with placeholder handlers for ICE, tracks, and signalling state (many handlers are stubs).
-
-Negotiation is **in progress**: offers are created and sent via the signalling server; answer handling, ICE candidate exchange, and remote video on `#received_video` are not fully implemented.
+Sets a nonce-based `Content-Security-Policy` header on every response in production. Skipped in dev mode to avoid blocking Vite's HMR and dev toolbar scripts. Directives cover `script-src`, `worker-src`, `connect-src` (API + WebSocket), `media-src`, `style-src`, `img-src`, `object-src`, and `base-uri`.
 
 ---
 
@@ -314,5 +315,5 @@ Negotiation is **in progress**: offers are created and sent via the signalling s
 
 1. **API working directory** — SQLite path is `./storage/data.db` relative to where `app.js` is started; prefer running from `web-socket-api/`.
 2. **Incomplete endpoints** — `DELETE /call/:callID/leave` is a stub. Do not expect leave-call to work at current
-3. **In-memory calls** — Restarting the API clears all active calls and WebSocket servers. No persistence of live sessions to the `Call` Sequelize model yet.
+3. **In-memory calls** — Restarting the API clears all active calls and WebSocket servers. No persistence of web socket calls to persistent storage at current.
 
