@@ -76,7 +76,7 @@ export default function AuthScreen({onAuthenticated}: AuthScreenProps) {
               </TabsList>
 
               <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-3">
+                <form onSubmit={handleLogin} className="space-y-3" suppressHydrationWarning={true}>
                   <Input
                     type="email"
                     placeholder="Email"
@@ -84,6 +84,7 @@ export default function AuthScreen({onAuthenticated}: AuthScreenProps) {
                     onChange={(e) => setLoginForm((f) => ({...f,email: e.target.value}))}
                     required
                     className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
+                    suppressHydrationWarning={true}
                   />
                   <Input
                     type="password"
@@ -92,6 +93,7 @@ export default function AuthScreen({onAuthenticated}: AuthScreenProps) {
                     onChange={(e) => setLoginForm((f) => ({...f,password: e.target.value}))}
                     required
                     className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
+                    suppressHydrationWarning={true}
                   />
                   {error&&<p className="text-sm text-red-400">{error}</p>}
                   <Button type="submit" disabled={loading} className="w-full bg-zinc-100 text-zinc-900 hover:bg-zinc-200">
@@ -101,7 +103,7 @@ export default function AuthScreen({onAuthenticated}: AuthScreenProps) {
               </TabsContent>
 
               <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-3">
+                <form onSubmit={handleRegister} className="space-y-3" suppressHydrationWarning={true}>
                   <Input
                     type="text"
                     placeholder="Username"
@@ -110,6 +112,7 @@ export default function AuthScreen({onAuthenticated}: AuthScreenProps) {
                     required
                     minLength={3}
                     className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
+                    suppressHydrationWarning={true}
                   />
                   <Input
                     type="email"
@@ -118,6 +121,7 @@ export default function AuthScreen({onAuthenticated}: AuthScreenProps) {
                     onChange={(e) => setRegisterForm((f) => ({...f,email: e.target.value}))}
                     required
                     className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
+                    suppressHydrationWarning={true}
                   />
                   <Input
                     type="password"
@@ -127,6 +131,7 @@ export default function AuthScreen({onAuthenticated}: AuthScreenProps) {
                     required
                     minLength={6}
                     className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
+                    suppressHydrationWarning={true}
                   />
                   {error&&<p className="text-sm text-red-400">{error}</p>}
                   <Button type="submit" disabled={loading} className="w-full bg-zinc-100 text-zinc-900 hover:bg-zinc-200">

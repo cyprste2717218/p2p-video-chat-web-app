@@ -124,6 +124,7 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
               onChange={(e) => setJoinInput(e.target.value)}
               placeholder="Enter call ID"
               className="w-64 bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
+              suppressHydrationWarning={true}
             />
             <Button
               onClick={handleJoin}

@@ -80,7 +80,7 @@ exports.constructURI=async (callID) => {
 	const relevantWSS=await exports.getRelevantWSS(callID);
 	const addressInfo=relevantWSS.address();
 
-	const host=addressInfo.address==='::'? 'localhost':addressInfo.address;
+	const host=addressInfo.address==='::'? `localhost`:addressInfo.address;
 	const port=addressInfo.port;
 
 	let uri;

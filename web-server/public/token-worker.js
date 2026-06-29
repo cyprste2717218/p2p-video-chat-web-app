@@ -53,7 +53,7 @@ async function handleLogin(requestBody) {
 
 	const resultMessage={message: "",type: "ResLogin"};
 
-	const result=await fetch(`http://localhost:3000/login`,{
+	const result=await fetch(`https://jvmr77f8-3000.uks1.devtunnels.ms/login`,{
 		method: "POST",
 		body: JSON.stringify(requestBody),
 		headers: {
@@ -89,7 +89,7 @@ async function handleRegister(requestBody) {
 
 	const resultMessage={message: "",type: "ResSignup"};
 
-	const result=await fetch(`http://localhost:3000/signup`,{
+	const result=await fetch(`https://jvmr77f8-3000.uks1.devtunnels.ms//signup`,{
 		method: "POST",
 		body: JSON.stringify(requestBody),
 		headers: {
@@ -119,7 +119,7 @@ async function handleLogout() {
 
 	const resultMessage={message: "",type: "ResLogout"};
 
-	const result=await fetch(`http://localhost:3000/logout`,{
+	const result=await fetch(`https://jvmr77f8-3000.uks1.devtunnels.ms/logout`,{
 		method: "POST",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",
@@ -153,7 +153,7 @@ async function handleCreateCall() {
 
 	const resultMessage={message: "",type: "ResCreateCall"};
 
-	const result=await fetch("http://localhost:3000/call/create",{
+	const result=await fetch("https://jvmr77f8-3000.uks1.devtunnels.ms/call/create",{
 		method: "POST",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",
@@ -192,7 +192,7 @@ async function handleJoinCall(requestBody) {
 	const resultMessage={message: "",type: "ResJoinCall"};
 	const callID=requestBody;
 
-	const result=await fetch(`http://localhost:3000/call/${callID}/join`,{
+	const result=await fetch(`https://jvmr77f8-3000.uks1.devtunnels.ms/call/${callID}/join`,{
 		method: "PUT",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",

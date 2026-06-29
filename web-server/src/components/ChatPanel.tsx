@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { Send } from "lucide-react";
+import React,{useState} from "react";
+import {ScrollArea} from "@/components/ui/scroll-area";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
+import {Avatar,AvatarFallback} from "@/components/ui/avatar";
+import {Separator} from "@/components/ui/separator";
+import {Send} from "lucide-react";
 
 interface ChatPanelProps {
   messages: string[];
@@ -12,8 +12,8 @@ interface ChatPanelProps {
   onSend: (message: string) => void;
 }
 
-export default function ChatPanel({ messages, participants, onSend }: ChatPanelProps) {
-  const [input, setInput] = useState("");
+export default function ChatPanel({messages,participants,onSend}: ChatPanelProps) {
+  const [input,setInput]=useState("");
 
   function handleSend() {
     if (!input.trim()) return;
@@ -25,24 +25,24 @@ export default function ChatPanel({ messages, participants, onSend }: ChatPanelP
     <div className="flex flex-col h-full bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden">
       <div className="px-4 py-3 border-b border-zinc-800">
         <p className="text-sm font-semibold text-zinc-100">Chat</p>
-        {participants.length > 0 && (
+        {participants.length>0&&(
           <p className="text-xs text-zinc-400 mt-0.5">{participants.join(", ")}</p>
         )}
       </div>
 
       <ScrollArea className="flex-1 px-4 py-3">
         <div className="flex flex-col gap-3">
-          {messages.length === 0 && (
+          {messages.length===0&&(
             <p className="text-xs text-zinc-500 text-center py-4">No messages yet</p>
           )}
-          {messages.map((msg, i) => {
-            const [sender, ...rest] = msg.split(": ");
-            const text = rest.join(": ");
+          {messages.map((msg,i) => {
+            const [sender,...rest]=msg.split(": ");
+            const text=rest.join(": ");
             return (
               <div key={i} className="flex items-start gap-2">
                 <Avatar className="h-6 w-6 shrink-0 mt-0.5">
                   <AvatarFallback className="text-[10px] bg-zinc-700 text-zinc-200">
-                    {sender?.[0]?.toUpperCase() ?? "?"}
+                    {sender?.[0]?.toUpperCase()??"?"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
@@ -61,9 +61,10 @@ export default function ChatPanel({ messages, participants, onSend }: ChatPanelP
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          onKeyDown={(e) => e.key==="Enter"&&handleSend()}
           placeholder="Type a message…"
           className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
+          suppressHydrationWarning={true}
         />
         <Button
           onClick={handleSend}
