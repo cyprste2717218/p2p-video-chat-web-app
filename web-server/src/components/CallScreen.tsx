@@ -84,7 +84,7 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
       <header className="flex items-center justify-between px-6 py-3 border-b border-zinc-800 shrink-0">
         <div className="flex items-center gap-2">
           <Video className="h-5 w-5 text-zinc-300" />
-          <span className="font-semibold text-zinc-100">VideoChat</span>
+          <span className="font-semibold text-zinc-100">Voneo</span>
         </div>
         <div className="flex items-center gap-3">
           {activeCallID&&(
@@ -129,7 +129,7 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
               onClick={handleJoin}
               disabled={loading!==null||!joinInput.trim()}
               variant="outline"
-              className="border-zinc-700 text-zinc-100 hover:bg-zinc-800"
+              className="border-zinc-700 text-zinc-900 hover:bg-zinc-800"
             >
               {loading==="join"? "Joining…":"Join Call"}
             </Button>

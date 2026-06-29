@@ -1,31 +1,31 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useTokenWorker } from "@/lib/useTokenWorker";
-import { Video } from "lucide-react";
+import React,{useState} from "react";
+import {Card,CardContent,CardHeader,CardTitle,CardDescription} from "@/components/ui/card";
+import {Tabs,TabsContent,TabsList,TabsTrigger} from "@/components/ui/tabs";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
+import {useTokenWorker} from "@/lib/useTokenWorker";
+import {Video} from "lucide-react";
 
 interface AuthScreenProps {
-  onAuthenticated: (email: string, username: string) => void;
+  onAuthenticated: (email: string,username: string) => void;
 }
 
-export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
-  const { login, register } = useTokenWorker();
+export default function AuthScreen({onAuthenticated}: AuthScreenProps) {
+  const {login,register}=useTokenWorker();
 
-  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
-  const [registerForm, setRegisterForm] = useState({ username: "", email: "", password: "" });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loginForm,setLoginForm]=useState({email: "",password: ""});
+  const [registerForm,setRegisterForm]=useState({username: "",email: "",password: ""});
+  const [error,setError]=useState("");
+  const [loading,setLoading]=useState(false);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const result = await login(loginForm.email, loginForm.password);
-      if (result === "Login failed") { setError("Invalid email or password."); return; }
-      onAuthenticated(loginForm.email, loginForm.email.split("@")[0]);
+      const result=await login(loginForm.email,loginForm.password);
+      if (result==="Login failed") {setError("Invalid email or password."); return;}
+      onAuthenticated(loginForm.email,loginForm.email.split("@")[0]);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -38,9 +38,9 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
     setError("");
     setLoading(true);
     try {
-      const result = await register(registerForm.username, registerForm.email, registerForm.password);
-      if (result === "Signup failed") { setError("Registration failed. Email may already be in use."); return; }
-      onAuthenticated(registerForm.email, registerForm.username);
+      const result=await register(registerForm.username,registerForm.email,registerForm.password);
+      if (result==="Signup failed") {setError("Registration failed. Email may already be in use."); return;}
+      onAuthenticated(registerForm.email,registerForm.username);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -55,7 +55,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
           <div className="bg-zinc-800 p-3 rounded-full">
             <Video className="h-7 w-7 text-zinc-100" />
           </div>
-          <h1 className="text-2xl font-bold text-zinc-100">VideoChat</h1>
+          <h1 className="text-2xl font-bold text-zinc-100">Voneo</h1>
           <p className="text-sm text-zinc-400">Peer-to-peer video calls, right in your browser</p>
         </div>
 
@@ -81,7 +81,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                     type="email"
                     placeholder="Email"
                     value={loginForm.email}
-                    onChange={(e) => setLoginForm((f) => ({ ...f, email: e.target.value }))}
+                    onChange={(e) => setLoginForm((f) => ({...f,email: e.target.value}))}
                     required
                     className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
                   />
@@ -89,13 +89,13 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                     type="password"
                     placeholder="Password"
                     value={loginForm.password}
-                    onChange={(e) => setLoginForm((f) => ({ ...f, password: e.target.value }))}
+                    onChange={(e) => setLoginForm((f) => ({...f,password: e.target.value}))}
                     required
                     className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
                   />
-                  {error && <p className="text-sm text-red-400">{error}</p>}
+                  {error&&<p className="text-sm text-red-400">{error}</p>}
                   <Button type="submit" disabled={loading} className="w-full bg-zinc-100 text-zinc-900 hover:bg-zinc-200">
-                    {loading ? "Signing in…" : "Sign in"}
+                    {loading? "Signing in…":"Sign in"}
                   </Button>
                 </form>
               </TabsContent>
@@ -106,7 +106,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                     type="text"
                     placeholder="Username"
                     value={registerForm.username}
-                    onChange={(e) => setRegisterForm((f) => ({ ...f, username: e.target.value }))}
+                    onChange={(e) => setRegisterForm((f) => ({...f,username: e.target.value}))}
                     required
                     minLength={3}
                     className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
@@ -115,7 +115,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                     type="email"
                     placeholder="Email"
                     value={registerForm.email}
-                    onChange={(e) => setRegisterForm((f) => ({ ...f, email: e.target.value }))}
+                    onChange={(e) => setRegisterForm((f) => ({...f,email: e.target.value}))}
                     required
                     className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
                   />
@@ -123,14 +123,14 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                     type="password"
                     placeholder="Password"
                     value={registerForm.password}
-                    onChange={(e) => setRegisterForm((f) => ({ ...f, password: e.target.value }))}
+                    onChange={(e) => setRegisterForm((f) => ({...f,password: e.target.value}))}
                     required
                     minLength={6}
                     className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-zinc-600"
                   />
-                  {error && <p className="text-sm text-red-400">{error}</p>}
+                  {error&&<p className="text-sm text-red-400">{error}</p>}
                   <Button type="submit" disabled={loading} className="w-full bg-zinc-100 text-zinc-900 hover:bg-zinc-200">
-                    {loading ? "Creating account…" : "Create account"}
+                    {loading? "Creating account…":"Create account"}
                   </Button>
                 </form>
               </TabsContent>
