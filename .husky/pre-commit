@@ -1,4 +1,8 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+echo "Running pre-commit hooks..."
+echo "Running lint checks on staged files..."
 npx lint-staged
+echo "Checking Astro.js frontend succesfully builds..."
+npm run build-video-chat-frontend
