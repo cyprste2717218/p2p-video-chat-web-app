@@ -11,7 +11,9 @@ import node from '@astrojs/node';
 export default defineConfig({
   output: 'server',
   integrations: [react()],
-
+  security: {
+    checkOrigin: true,
+  },
   vite: {
     plugins: [tailwindcss()]
   },

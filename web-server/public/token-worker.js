@@ -53,7 +53,7 @@ async function handleLogin(requestBody) {
 
 	const resultMessage={message: "",type: "ResLogin"};
 
-	const result=await fetch(`https://jvmr77f8-3000.uks1.devtunnels.ms/login`,{
+	const result=await fetch(`http://localhost:3000/login`,{
 		method: "POST",
 		body: JSON.stringify(requestBody),
 		headers: {
@@ -67,7 +67,6 @@ async function handleLogin(requestBody) {
 		const {success,data}=dataBody;
 
 		if (!success) {
-			console.log("Error in handleLogin:",data);
 			resultMessage.message="Login failed";
 			return resultMessage;
 		}
@@ -89,7 +88,7 @@ async function handleRegister(requestBody) {
 
 	const resultMessage={message: "",type: "ResSignup"};
 
-	const result=await fetch(`https://jvmr77f8-3000.uks1.devtunnels.ms//signup`,{
+	const result=await fetch(`http://localhost:3000/signup`,{
 		method: "POST",
 		body: JSON.stringify(requestBody),
 		headers: {
@@ -119,7 +118,7 @@ async function handleLogout() {
 
 	const resultMessage={message: "",type: "ResLogout"};
 
-	const result=await fetch(`https://jvmr77f8-3000.uks1.devtunnels.ms/logout`,{
+	const result=await fetch(`http://localhost:3000/logout`,{
 		method: "POST",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",
@@ -153,15 +152,13 @@ async function handleCreateCall() {
 
 	const resultMessage={message: "",type: "ResCreateCall"};
 
-	const result=await fetch("https://jvmr77f8-3000.uks1.devtunnels.ms/call/create",{
+	const result=await fetch("http://localhost:3000/call/create",{
 		method: "POST",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",
 			"Authorization": `Bearer ${tokenService.getToken()}`
 		}
 	});
-	console.log("this is the access token:",tokenService.getToken());
-	console.log("this is the result of the createCall fetch:",result);
 
 	if (result.ok) {
 
@@ -192,7 +189,7 @@ async function handleJoinCall(requestBody) {
 	const resultMessage={message: "",type: "ResJoinCall"};
 	const callID=requestBody;
 
-	const result=await fetch(`https://jvmr77f8-3000.uks1.devtunnels.ms/call/${callID}/join`,{
+	const result=await fetch(`http://localhost:3000/call/${callID}/join`,{
 		method: "PUT",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",
@@ -201,13 +198,11 @@ async function handleJoinCall(requestBody) {
 	});
 
 	if (result.ok) {
-		console.log("Succesful join call response");
 		const dataBody=await result.json();
 
 		const {success,data}=dataBody;
 
 		if (!success) {
-			console.log("Unsuccesful in result.ok for joinCall:",result);
 			resultMessage.message="Join new call failed";
 			return resultMessage;
 		}
@@ -215,7 +210,6 @@ async function handleJoinCall(requestBody) {
 		const {callURL}=data;
 		resultMessage.message=callURL;
 	} else {
-		console.log("Unsuccesful when not receieved result.ok for joinCall:",result);
 		resultMessage.message="Join new call failed";
 	}
 
