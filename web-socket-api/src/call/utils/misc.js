@@ -57,7 +57,7 @@ exports.verifyClient=(info) => {
 
 		const isProd=process.env.NODE_ENV==="production";
 		if (isProd) {
-			const allowedOrigins=['https://app.example.com']; //update this to vercel domain used
+			const allowedOrigins=['https://app.example.com']; //update this to gcp domain used
 			if (!allowedOrigins.includes(info.origin)) {
 				console.log(`Rejected unauthorized origin: ${info.origin}`);
 				return false;
