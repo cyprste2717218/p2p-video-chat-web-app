@@ -4,6 +4,7 @@
   "description": "Video chat application",
   "main": "other.js",
   "scripts": {
+    "run-all": "concurrently \"npm run run-signalling-api\" \"npm run run-video-chat-frontend\"",
     "run-video-chat-frontend": "cd web-server && npm run dev",
     "build-video-chat-frontend": "cd web-server && npm run build",
     "run-signalling-api": "cd web-socket-api/src && node --env-file=.env app.js",
