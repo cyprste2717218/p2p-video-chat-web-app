@@ -18,6 +18,8 @@
     "husky": "^9.1.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.1.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.3",
     "xo": "^2.0.2"
