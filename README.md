@@ -13,6 +13,9 @@
 [![JWT](https://img.shields.io/badge/JWT-black?logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![Playwright](https://img.shields.io/badge/Playwright-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Supertest](https://img.shields.io/badge/Supertest-07B203?logo=&logoColor=white)](https://github.com/visionmedia/supertest)
 
 A peer-to-peer video chat application built with an Astro/React frontend and a Node.js signalling stack. Users authenticate then create or join calls through an Express.js API, which provisions per-call WebSocket servers for session coordination. WebRTC handles media between peers once signalling completes.
 
@@ -31,40 +34,50 @@ Typical flow:
 
 ```
 video-chat-application/
-├── web-socket-api/          # Express.js signalling API + per-call WebSocket servers
-│   └── src/                 
-│       ├── index.html       # Video chat UI
-│       ├── app.js           # API entry point (port 3000 by default)
-│       ├── authorization/   # Signup, login, logout, reset token provision routes
-│       ├── call/            # Create / join / leave call routes + WS utilities
-│       ├── common/          # DB config (SQLite), models, JWT middleware
-│       ├── storage/         # Raw SQLite DB data and pre-configured DB with test users
-│       └── openapi.yaml     # API schema reference (may drift from implementation)
-│   └── tests/ 
-│       ├── e2e/             # End-to-end tests (Chains of API calls following user journeys)        
-│       ├── it/              # Integration tests 
-│       └── unit/            # Unit tests (Contract API endpoint tests)     
-├── web-server/              # Astro.js frontend (SSR, React + Tailwind + shadcn/ui)
+├── web-socket-api/              # Express.js signalling API + per-call WebSocket servers
+│   └── src/
+│       ├── app.js               # API entry point (port 3000 by default)
+│       ├── openapi.yaml         # API schema reference (may drift from implementation)
+│       ├── authorization/       # Signup, login, logout, reset token provision routes
+│       ├── call/                # Create / join / leave call routes + WS utilities
+│       │   ├── controller.js
+│       │   ├── routes.js
+│       │   └── utils/           # Session store, WebSocket server, misc helpers
+│       ├── common/              # DB config (SQLite), models, JWT middleware
+│       │   ├── database.js
+│       │   ├── middlewares/     # Auth, permission checks, token handling
+│       │   └── models/          # User, Call, CallParticipants, RefreshToken
+│       └── storage/             # SQLite DB files (data.db, example.data.db)
+│   └── tests/
+│       ├── it/                  # Integration tests
+│       └── unit/                # Unit tests (Backend utiities, i.e. token generators, helper utils)
+├── web-server/                  # Astro.js frontend (SSR, React + Tailwind + shadcn/ui)
 │   ├── public/
-│   │   └── token-worker.js  # Web Worker: token storage + all API fetch calls
+│   │   └── token-worker.js      # Web Worker: token storage + all API fetch calls
+│   ├── tests/                    
+│       ├── component/           # Component tests, i.e. validating interactive components respond to user
 │   └── src/
 │       ├── pages/
-│       │   └── index.astro  # Shell page — imports global CSS, renders <App client:load />
+│       │   └── index.astro      # Shell page — imports global CSS, renders <App client:load />
 │       ├── components/
-│       │   ├── App.tsx           # Root — switches between AuthScreen / CallScreen
-│       │   ├── AuthScreen.tsx    # Login + register tabs (shown when logged out)
-│       │   ├── CallScreen.tsx    # Create/join call controls, video grid, chat sidebar
-│       │   ├── VideoGrid.tsx     # Local + remote video tiles
-│       │   ├── ChatPanel.tsx     # Chat message list + send input
-│       │   └── ui/               # shadcn/ui primitives (button, card, input, tabs, …)
+│       │   ├── App.tsx          # Root — switches between AuthScreen / CallScreen
+│       │   ├── AuthScreen.tsx   # Login + register tabs (shown when logged out)
+│       │   ├── CallScreen.tsx   # Create/join call controls, video grid, chat sidebar
+│       │   ├── VideoGrid.tsx    # Local + remote video tiles
+│       │   ├── ChatPanel.tsx    # Chat message list + send input
+│       │   └── ui/              # shadcn/ui primitives
 │       ├── lib/
-│       │   ├── rtcUtils.ts       # WebRTC helpers (media, peer connections, WS messaging)
-│       │   ├── useTokenWorker.ts # Hook — module-level singleton Worker, exposes auth/call actions
-│       │   └── utils.ts          # shadcn cn() class utility
+│       │   ├── rtcUtils.ts      # WebRTC helpers (media, peer connections, WS messaging)
+│       │   ├── useTokenWorker.ts # Hook — module-level singleton Worker
+│       │   └── utils.ts         # shadcn cn() class utility
 │       ├── styles/
-│       │   └── global.css        # Tailwind v4 + shadcn CSS variable theme
-│       └── middleware.ts         # CSP header (nonce-based, skipped in dev mode)
-└── package.json             # Root scripts to run both servers
+│       │   └── global.css       # Tailwind v4 + shadcn CSS variable theme
+│       └── middleware.ts        # CSP header (nonce-based, skipped in dev mode)
+├── e2e/                         # End-to-end tests (Playwright)
+├── .github/workflows/           # CI/CD workflows
+├── .husky/                      # Git hooks
+├── package.json                 # Root scripts to run both servers
+└── playwright.config.ts         # Playwright configuration
 ```
 
 
