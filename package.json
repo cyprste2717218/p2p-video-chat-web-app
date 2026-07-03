@@ -10,7 +10,9 @@
     "run-built-video-chat-frontend": "cd web-server && node ./dist/server/entry.mjs",
     "run-signalling-api": "cd web-socket-api/src && node --env-file=.env app.js",
     "test": "xo",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "gcp-deploy-dev": "cd infra && pulumi up",
+    "gcp-destroy-dev": "cd infra && pulumi destroy"
   },
   "author": "",
   "license": "ISC",
