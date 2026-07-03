@@ -1,0 +1,46 @@
+# syntax=docker/dockerfile:1
+
+#Stage 1 - Builder stage
+FROM dhi.io/node:26-alpine-dev AS builder
+
+WORKDIR /app
+
+
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=bind,source=package.json,target=package.json \
+    npm install
+
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=bind,source=package.json,target=package.json \
+    --mount=type=bind,source=package-lock.json,target=package-lock.json \
+    npm ci
+
+
+COPY . .
+
+# Stage 2 - Deps stage
+FROM dhi.io/node:26-alpine-dev AS deps
+
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=bind,source=package.json,target=package.json \
+    npm install --omit=dev
+
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=bind,source=package.json,target=package.json \
+    --mount=type=bind,source=package-lock.json,target=package-lock.json \
+    npm ci --omit=dev
+
+
+# Stage 3 - Final stage
+FROM dhi.io/node:26-alpine AS runner
+
+ENV PATH=/app/node_modules/.bin:$PATH
+
+WORKDIR /app
+
+COPY --from=builder --chown=node:node /app . 
+COPY --from=deps --chown=node:node /app/node_modules .
+
+EXPOSE 3000
+
+CMD ["node","app.js"]

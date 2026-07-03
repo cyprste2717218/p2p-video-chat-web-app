@@ -1,0 +1,18 @@
+
+# Stage 1: Develop the Astro SSR React.js Application
+
+FROM dhi.io/node:26-alpine-dev AS dev
+
+WORKDIR /app
+
+COPY package.json package-lock.json* .
+
+RUN --mount=type=cache,target=/root/.npm npm install
+
+COPY . .
+
+ENV HOST=0.0.0.0
+ENV PORT=4321
+EXPOSE 4321
+
+CMD ["npm", "run", "dev", "--", "--host"]

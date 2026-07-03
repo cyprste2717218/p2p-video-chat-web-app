@@ -1,0 +1,20 @@
+services:
+  web-server-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: voneo-web-server
+    ports:
+      - "8080:8080"
+
+  web-server-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "4321:4321"
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app

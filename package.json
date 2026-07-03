@@ -5,10 +5,10 @@
   "main": "other.js",
   "scripts": {
     "run-all": "concurrently \"npm run run-signalling-api\" \"npm run run-video-chat-frontend\"",
-    "run-video-chat-frontend": "cd web-server && npm run dev",
+    "run-video-chat-frontend": "cd web-server && docker compose watch web-server-dev",
     "build-video-chat-frontend": "cd web-server && npm run build",
-    "run-signalling-api": "cd web-socket-api/src && node --env-file=.env app.js",
     "run-built-video-chat-frontend": "cd web-server && node ./dist/server/entry.mjs",
+    "run-signalling-api": "cd web-socket-api/src && node --env-file=.env app.js",
     "test": "xo",
     "prepare": "husky install"
   },

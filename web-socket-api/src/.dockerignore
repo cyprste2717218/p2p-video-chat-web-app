@@ -1,0 +1,7 @@
+# .dockerignore
+
+node_modules
+.env
+.env.example
+openapi.yaml
+Dockerfile

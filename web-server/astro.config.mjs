@@ -11,6 +11,10 @@ import node from '@astrojs/node';
 export default defineConfig({
   output: 'server',
   integrations: [react()],
+  server: {
+    host: true,
+    port: 4321,
+  },
   security: {
     checkOrigin: true,
   },
