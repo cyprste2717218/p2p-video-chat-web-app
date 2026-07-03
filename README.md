@@ -23,6 +23,8 @@
 [![Playwright](https://img.shields.io/badge/Playwright-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
 [![Vitest](https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
 [![Supertest](https://img.shields.io/badge/Supertest-07B203?logo=&logoColor=white)](https://github.com/visionmedia/supertest)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Pulumi](https://img.shields.io/badge/Pulumi-8A3391?logo=pulumi&logoColor=white)](https://www.pulumi.com/)
 
 A peer-to-peer video chat application built with an Astro/React frontend and a Node.js signalling stack. Users authenticate then create or join calls through an Express.js API, which provisions per-call WebSocket servers for session coordination. WebRTC handles media between peers once signalling completes.
 
@@ -80,6 +82,7 @@ video-chat-application/
 │       ├── styles/
 │       │   └── global.css       # Tailwind v4 + shadcn CSS variable theme
 │       └── middleware.ts        # CSP header (nonce-based, skipped in dev mode)
+├── infra/                       # Pulumi (TypeScript) IaC — provisions GCP resources (Cloud Run service, Cloud SQL instance, Secret Manager secrets) for production deployments
 ├── e2e/                         # End-to-end tests (Playwright)
 ├── .github/workflows/           # CI/CD workflows
 ├── .husky/                      # Git hooks
@@ -127,6 +130,14 @@ Alternatively, from the repo root:
 npm run run-signalling-api
 ```
 
+Or using the Docker dev image (from `web-socket-api/src/`):
+
+```bash
+docker compose up web-socket-api-dev
+```
+
+This mounts the source directory and watches for changes, so no rebuild is needed during development.
+
 ### 3. Run the Astro frontend
 
 From the `web-server` directory:
@@ -143,6 +154,16 @@ From the repo root:
 ```bash
 npm run run-video-chat-frontend
 ```
+
+Or using the Docker dev image (from `web-server/`):
+
+```bash
+docker compose up web-server-dev
+```
+
+This uses `Dockerfile.dev` and syncs local file changes into the container automatically.
+
+**Production image:** `Dockerfile` produces a production-optimised image (`voneo-web-server`). This image is used in GCP deployments — it is pushed to Artifact Registry and referenced by the Cloud Run service provisioned via the Pulumi stack in `infra/`.
 
 ---
 
