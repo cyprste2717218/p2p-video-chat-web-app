@@ -64,7 +64,7 @@ video-chat-application/
 │       ├── it/                  # Integration tests
 │       └── unit/                # Unit tests (Backend utiities, i.e. token generators, helper utils)
 ├── web-server/                  # Astro.js frontend (SSR, React + Tailwind + shadcn/ui)
-│   ├── Dockerfile               # Production Docker image — Nginx serving the built Astro SSR app
+│   ├── Dockerfile               # Production Docker image — serving the built Astro SSR app
 │   ├── Dockerfile.dev           # Dev Docker image — mounts source and watches for changes
 │   ├── compose.yaml             # Docker Compose services (prod + dev)
 │   ├── public/
