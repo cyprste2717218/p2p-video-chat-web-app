@@ -25,6 +25,7 @@
 [![Supertest](https://img.shields.io/badge/Supertest-07B203?logo=&logoColor=white)](https://github.com/visionmedia/supertest)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Pulumi](https://img.shields.io/badge/Pulumi-8A3391?logo=pulumi&logoColor=white)](https://www.pulumi.com/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
 A peer-to-peer video chat application built with an Astro/React frontend and a Node.js signalling stack. Users authenticate then create or join calls through an Express.js API, which provisions per-call WebSocket servers for session coordination. WebRTC handles media between peers once signalling completes.
 
@@ -47,6 +48,8 @@ video-chat-application/
 │   └── src/
 │       ├── app.js               # API entry point (port 3000 by default)
 │       ├── openapi.yaml         # API schema reference (may drift from implementation)
+│       ├── Dockerfile           # Production Docker image for the signalling API
+│       ├── compose.yaml         # Docker Compose services (dev)
 │       ├── authorization/       # Signup, login, logout, reset token provision routes
 │       ├── call/                # Create / join / leave call routes + WS utilities
 │       │   ├── controller.js
@@ -61,6 +64,9 @@ video-chat-application/
 │       ├── it/                  # Integration tests
 │       └── unit/                # Unit tests (Backend utiities, i.e. token generators, helper utils)
 ├── web-server/                  # Astro.js frontend (SSR, React + Tailwind + shadcn/ui)
+│   ├── Dockerfile               # Production Docker image — Nginx serving the built Astro SSR app
+│   ├── Dockerfile.dev           # Dev Docker image — mounts source and watches for changes
+│   ├── compose.yaml             # Docker Compose services (prod + dev)
 │   ├── public/
 │   │   └── token-worker.js      # Web Worker: token storage + all API fetch calls
 │   ├── tests/                    
