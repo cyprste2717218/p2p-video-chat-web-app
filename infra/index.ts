@@ -14,7 +14,7 @@ const secret_version_data=new gcp.secretmanager.SecretVersion("secret-version-da
 const instance=new gcp.sql.DatabaseInstance("instance",{
     name: "cloudrun-sql",
     region: "us-central1",
-    databaseVersion: "MYSQL_5_7",
+    databaseVersion: "MYSQL_8_4",
     settings: {
         tier: "db-f1-micro",
     },
