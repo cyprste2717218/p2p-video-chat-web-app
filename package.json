@@ -4,11 +4,14 @@
   "description": "Video chat application",
   "main": "other.js",
   "scripts": {
-    "run-all": "concurrently \"npm run run-signalling-api\" \"npm run run-video-chat-frontend\"",
+    "dev": "concurrently \"npm run run-signalling-api\" \"npm run run-video-chat-frontend\"",
+    "halt-dev": "concurrently \"npm run halt-video-chat-frontend\" \"npm run halt-signalling-api\"",
     "run-video-chat-frontend": "cd web-server && docker compose watch web-server-dev",
-    "build-video-chat-frontend": "cd web-server && npm run build",
-    "run-built-video-chat-frontend": "cd web-server && node ./dist/server/entry.mjs",
-    "run-signalling-api": "cd web-socket-api/src && node --env-file=.env app.js",
+    "build-video-chat-frontend": "cd web-server && docker build -t video-chat-frontend:1.0.0 . ",
+    "run-built-video-chat-frontend": "cd web-server && docker compose up web-server-prod",
+    "run-signalling-api": "cd web-socket-api/src && docker compose up signalling-server-prod",
+    "halt-video-chat-frontend": "cd web-server && docker compose down web-server-dev",
+    "halt-signalling-api": "cd web-socket-api/src && docker compose down signalling-server-prod",
     "test": "xo",
     "prepare": "husky install",
     "gcp-deploy-dev": "cd infra && pulumi up",
@@ -17,6 +20,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "concurrently": "^10.0.3",
     "husky": "^9.1.7"
   },
   "devDependencies": {
