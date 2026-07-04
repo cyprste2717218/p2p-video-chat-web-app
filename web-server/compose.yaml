@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: voneo-web-server
+    image: europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-frontend:1.0.0
     ports:
       - "8080:8080"
 
