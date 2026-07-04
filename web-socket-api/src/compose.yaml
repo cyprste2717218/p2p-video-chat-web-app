@@ -2,6 +2,7 @@ services:
   signalling-server-prod:
     build:
       context: .
+    image: europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-backend:1.0.0
     ports:
       - 3000:3000
     environment:
