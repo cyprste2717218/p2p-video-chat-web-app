@@ -8,7 +8,7 @@
 [![Express](https://img.shields.io/badge/Express-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![WebSocket](https://img.shields.io/badge/WebSocket-010101?logo=websocket&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API)
 [![WebRTC](https://img.shields.io/badge/WebRTC-333333?logo=webrtc&logoColor=white)](https://webrtc.org/)
-[![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![Sequelize](https://img.shields.io/badge/Sequelize-52B0E7?logo=sequelize&logoColor=white)](https://sequelize.org/)
 [![JWT](https://img.shields.io/badge/JWT-black?logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
@@ -45,32 +45,31 @@ Typical flow:
 ```
 video-chat-application/
 ├── web-socket-api/              # Express.js signalling API + per-call WebSocket servers
-│   └── src/
-│       ├── app.js               # API entry point (port 3000 by default)
-│       ├── openapi.yaml         # API schema reference (may drift from implementation)
-│       ├── Dockerfile           # Production Docker image for the signalling API
-│       ├── compose.yaml         # Docker Compose services (dev)
-│       ├── authorization/       # Signup, login, logout, reset token provision routes
-│       ├── call/                # Create / join / leave call routes + WS utilities
-│       │   ├── controller.js
-│       │   ├── routes.js
-│       │   └── utils/           # Session store, WebSocket server, misc helpers
-│       ├── common/              # DB config (SQLite), models, JWT middleware
-│       │   ├── database.js
-│       │   ├── middlewares/     # Auth, permission checks, token handling
-│       │   └── models/          # User, Call, CallParticipants, RefreshToken
-│       └── storage/             # SQLite DB files (data.db, example.data.db)
+│   ├── src/
+│   │   ├── app.js               # API entry point (port 3000 by default)
+│   │   ├── openapi.yaml         # API schema reference (may drift from implementation)
+│   │   ├── Dockerfile           # Production Docker image for the signalling API
+│   │   ├── compose.yaml         # Docker Compose services (dev)
+│   │   ├── authorization/       # Signup, login, logout, reset token provision routes
+│   │   ├── call/                # Create / join / leave call routes + WS utilities
+│   │   │   ├── controller.js
+│   │   │   ├── routes.js
+│   │   │   └── utils/           # Session store, WebSocket server, misc helpers
+│   │   └── common/              # DB config (MySQL), models, JWT middleware
+│   │       ├── database.js
+│   │       ├── middlewares/     # Auth, permission checks, token handling
+│   │       └── models/          # User, Call, CallParticipants, RefreshToken
 │   └── tests/
 │       ├── it/                  # Integration tests
-│       └── unit/                # Unit tests (Backend utiities, i.e. token generators, helper utils)
+│       └── unit/                # Unit tests (backend utilities, i.e. token generators, helper utils)
 ├── web-server/                  # Astro.js frontend (SSR, React + Tailwind + shadcn/ui)
 │   ├── Dockerfile               # Production Docker image — serving the built Astro SSR app
 │   ├── Dockerfile.dev           # Dev Docker image — mounts source and watches for changes
 │   ├── compose.yaml             # Docker Compose services (prod + dev)
 │   ├── public/
 │   │   └── token-worker.js      # Web Worker: token storage + all API fetch calls
-│   ├── tests/                    
-│       ├── component/           # Component tests, i.e. validating interactive components respond to user
+│   ├── tests/
+│   │   └── components/          # Component tests, i.e. validating interactive components respond to user
 │   └── src/
 │       ├── pages/
 │       │   └── index.astro      # Shell page — imports global CSS, renders <App client:load />
@@ -92,6 +91,8 @@ video-chat-application/
 ├── e2e/                         # End-to-end tests (Playwright)
 ├── .github/workflows/           # CI/CD workflows
 ├── .husky/                      # Git hooks
+├── .env.example                 # Example environment variables for local setup
+├── .prettierrc                  # Prettier configuration
 ├── package.json                 # Root scripts to run both servers
 └── playwright.config.ts         # Playwright configuration
 ```
@@ -177,10 +178,9 @@ This uses `Dockerfile.dev` and syncs local file changes into the container autom
 
 **Base URL:** `http://localhost:3000` (or the host/port configured in `web-socket-api/app.js`)
 
-**Database:** SQLite at `web-socket-api/storage/data.db` (created on first run via Sequelize `sync()`)
+**Database:** MySQL at `http://localhost:3306` (created on first run via Sequelize `sync()`, with sequelize seeder function adding data for test users described below)
 <br><br>
-<i>Note:</i> To use test DB copy `example.data.db` and rename to `data.db` before spinning up API for first time.
-
+<i>Note:</i> 'Sequelize' seeder function only runs when `NODE_ENV`=`dev`, for development convenience
 ### API Routes
 
 #### Auth (`/`)
@@ -263,7 +263,7 @@ After `create` or `join`, clients connect to `callURL` and send JSON messages, f
 
 ### API examples
 
-In `example.data.db`, the following users have been defined for testing:
+For development (when `NODE_ENV` is `dev`in `.env`) the following test users are seeded via sequelize for testing when the `signalling_server_prod` service container starts:
 
 ```json                                    
 {
@@ -331,12 +331,16 @@ In order to sign JWT access and reset tokens, the API requires a `.env` to defin
 JWT_SECRET=thesecret
 REFRESH_TOKEN_SECRET=anothersecret
 NODE_ENV=dev
+DB_NAME=dev-db
+DB_PASSWORD=testpassword123
+DB_HOST=mysql-db
+DB_PORT=3306
 ```
 
-This should be defined in the `src/` directory in order for the `dev` command to spin up the server to provide these variables.
+This should be defined in the root directory in order for both the Astro frontend and Express.js/WebSockets backend to access these variables.
 `NODE_ENV` can be set to either `dev` or `production`, setting `production` ensures refresh token cookie can only be sent over secure `HTTPS` connections (sets `Secure` property to `true`).
 
-A `.env.example` file has been defined using these defaults for local tesing.
+A `.env.example` file has been defined using these defaults for local testing. For production usage, ensure to set your own.
 
 ---
 
@@ -362,7 +366,6 @@ Sets a nonce-based `Content-Security-Policy` header on every response in product
 
 ## Gotchas & Experimentation
 
-1. **API working directory** — SQLite path is `./storage/data.db` relative to where `app.js` is started; prefer running from `web-socket-api/`.
-2. **Incomplete endpoints** — `DELETE /call/:callID/leave` is a stub. Do not expect leave-call to work at current
-3. **In-memory calls** — Restarting the API clears all active calls and WebSocket servers. No persistence of web socket calls to persistent storage at current.
+1. **Incomplete endpoints** — `DELETE /call/:callID/leave` is a stub. Do not expect leave-call to work at current
+2. **In-memory calls** — Restarting the API clears all active calls and WebSocket servers. No persistence of web socket calls to persistent storage at current.
 

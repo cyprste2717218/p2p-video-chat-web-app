@@ -8,5 +8,25 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
       - NODE_ENV=${NODE_ENV}
+      - DB_NAME=${DB_NAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+    depends_on:
+      mysql-db:
+        condition: service_healthy
 
-      
+  mysql-db:
+      image: mysql:8.4
+      container_name: local-mysql
+      restart: always
+      environment:
+        MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+        MYSQL_DATABASE: ${DB_NAME}
+      ports:
+        - "${DB_PORT:-3306}:3306"
+      healthcheck:
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD}"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
