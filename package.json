@@ -1,8 +1,7 @@
 {
-  "name": "video-chat-application",
+  "name": "voneo-video-chat-app",
   "version": "1.0.0",
-  "description": "Video chat application",
-  "main": "other.js",
+  "description": "P2P Video Chat Web App built with Express.js, WebSockets & WebRTC",
   "scripts": {
     "dev": "concurrently \"npm run run-signalling-api\" \"npm run run-video-chat-frontend\"",
     "halt-dev": "concurrently \"npm run halt-local-db\" \"npm run halt-video-chat-frontend\" \"npm run halt-signalling-api\" \"cd web-socket-api/src && docker compose down mysql-db\"",
@@ -20,7 +19,7 @@
     "nuke:win": "powershell -ExecutionPolicy Bypass -File nuke.ps1",
     "nuke:unix": "bash nuke.sh"
   },
-  "author": "",
+  "author": "cyprste2717218",
   "license": "ISC",
   "dependencies": {
     "concurrently": "^10.0.3",
