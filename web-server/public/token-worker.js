@@ -24,7 +24,7 @@ onmessage=async function(event) {
 
 	switch (messageType) {
 		case 'Init':
-			apiBase=event.data.apiBase ?? "";
+			apiBase=event.data.apiBase??"";
 			break;
 		case 'ReqLogin':
 			const loginResult=await handleLogin(requestBody);
@@ -57,7 +57,7 @@ async function handleLogin(requestBody) {
 
 	const resultMessage={message: "",type: "ResLogin"};
 
-	const result=await fetch(`${apiBase}/login`,{
+	const result=await fetch(`${apiBase}/auth/login`,{
 		method: "POST",
 		body: JSON.stringify(requestBody),
 		headers: {
@@ -92,7 +92,7 @@ async function handleRegister(requestBody) {
 
 	const resultMessage={message: "",type: "ResSignup"};
 
-	const result=await fetch(`${apiBase}/signup`,{
+	const result=await fetch(`${apiBase}/auth/signup`,{
 		method: "POST",
 		body: JSON.stringify(requestBody),
 		headers: {
@@ -122,7 +122,7 @@ async function handleLogout() {
 
 	const resultMessage={message: "",type: "ResLogout"};
 
-	const result=await fetch(`${apiBase}/logout`,{
+	const result=await fetch(`${apiBase}/auth/logout`,{
 		method: "POST",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",

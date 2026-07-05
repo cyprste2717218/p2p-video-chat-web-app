@@ -206,10 +206,7 @@ const urlMap=new gcp.compute.RegionUrlMap("lb-url-map",{
         name: "voneo-paths",
         defaultService: frontendService.id,
         pathRules: [
-            // Auth routes
-            {paths: ["/signup","/login","/logout","/refresh"],service: backendService.id},
-            // Call routes
-            {paths: ["/call","/call/*"],service: backendService.id},
+            {paths: ["/auth/*","/call/*"],service: backendService.id},
         ],
     }],
 });

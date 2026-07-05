@@ -15,7 +15,7 @@ app.use(express.json());
 
 
 const authRoutes=require('./authorization/routes');
-app.use('/',authRoutes);
+app.use('/auth',authRoutes);
 
 const callRoutes=require('./call/routes');
 app.use('/call',callRoutes);

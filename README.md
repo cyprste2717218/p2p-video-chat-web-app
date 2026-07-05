@@ -181,15 +181,15 @@ App URL: **[http://localhost:4321/](http://localhost:4321/)**
 <i>Note:</i> 'Sequelize' seeder function only runs when `NODE_ENV`=`dev`, for development convenience
 ### API Routes
 
-#### Auth (`/`)
+#### Auth (`/auth`)
 
 
 | Method | Path      | Auth | Request body                                                                          | Success response                                                                       |
 | ------ | --------- | ---- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `POST` | `/signup` | No   | `{ "username": string (min 3), "email": string (email), "password": string (min 6) }` | `201` — `{ "success": true, "data": {"message": "Succesful sign up"}}` |
-| `POST` | `/login`  | No   | `{ "email": string (email), "password": string (min 6) }`                             | `200` — `{ "success": true, "data": { "accessToken": "<jwt>"}}`                        |
-| `POST` | `/logout` | Yes  | —                                                                                     | `200` — `{ "success": true, "data": {"message": "Logged out succesfully"}}`           |
-| `POST` | `/refresh` | Yes | —                                                                                     | `200` — `{ "success": true}`                                                           |
+| `POST` | `/auth/signup` | No   | `{ "username": string (min 3), "email": string (email), "password": string (min 6) }` | `201` — `{ "success": true, "data": {"message": "Succesful sign up"}}` |
+| `POST` | `/auth/login`  | No   | `{ "email": string (email), "password": string (min 6) }`                             | `200` — `{ "success": true, "data": { "accessToken": "<jwt>"}}`                        |
+| `POST` | `/auth/logout` | Yes  | —                                                                                     | `200` — `{ "success": true, "data": {"message": "Logged out succesfully"}}`           |
+| `POST` | `/auth/refresh` | Yes | —                                                                                     | `200` — `{ "success": true}`                                                           |
 
 
 **Signup errors:** 
@@ -236,7 +236,7 @@ Protected routes expect a JWT in the `Authorization` header:
 Authorization: Bearer <token>
 ```
 
-Tokens are issued on successful **login** (`POST /login`). Secrets for creating access and refresh token JWTs is provided via `.env`, expirys for both are defined in `common/middlewares/tokens.js`.
+Tokens are issued on successful **login** (`POST /auth/login`). Secrets for creating access and refresh token JWTs is provided via `.env`, expirys for both are defined in `common/middlewares/tokens.js`.
 
 ### WebSocket signalling (per call)
 
@@ -281,7 +281,7 @@ For development (when `NODE_ENV` is `dev`in `.env`) the following test users are
 **Register a user**
 
 ```bash
-curl -X POST http://localhost:3000/signup \
+curl -X POST http://localhost:3000/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"username":"alice","email":"alice@example.com","password":"secret12"}'
 ```
@@ -289,7 +289,7 @@ curl -X POST http://localhost:3000/signup \
 **Login**
 
 ```bash
-curl -X POST http://localhost:3000/login \
+curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"alice@example.com","password":"secret12"}'
 ```
