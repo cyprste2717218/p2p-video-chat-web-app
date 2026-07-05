@@ -68,6 +68,10 @@ const dbInstance=new gcp.sql.DatabaseInstance("instance",{
     databaseVersion: "MYSQL_8_4",
     settings: {
         tier: "db-f1-micro",
+        availabilityType: "ZONAL",
+        ipConfiguration: {
+            ipv4Enabled: false,
+        },
     },
     deletionProtection: true,
 });
@@ -148,33 +152,40 @@ const voneoBackend=new gcp.cloudrunv2.Service("default",{
 
 
 
-// Global External ALB //
+// Regional External ALB //
 
-// IP for Global External ALB
-const ip=new gcp.compute.GlobalAddress("lb-ip",{});
+const region="europe-west2";
+
+// Regional IP
+const ip=new gcp.compute.Address("lb-ip",{
+    region,
+    networkTier: "STANDARD",
+});
 
 // NEG for the backend Cloud Run service
 const backendNeg=new gcp.compute.RegionNetworkEndpointGroup("backend-neg",{
-    region: "europe-west2",
+    region,
     networkEndpointType: "SERVERLESS",
     cloudRun: {service: voneoBackend.name},
 });
 
 // NEG for the frontend Cloud Run service
 const frontendNeg=new gcp.compute.RegionNetworkEndpointGroup("frontend-neg",{
-    region: "europe-west2",
+    region,
     networkEndpointType: "SERVERLESS",
     cloudRun: {service: voneoFrontend.name},
 });
 
-const backendService=new gcp.compute.BackendService("lb-backend",{
+const backendService=new gcp.compute.RegionBackendService("lb-backend",{
+    region,
     protocol: "HTTP",
     loadBalancingScheme: "EXTERNAL_MANAGED",
     timeoutSec: 3600,
     backends: [{group: backendNeg.id}],
 });
 
-const frontendService=new gcp.compute.BackendService("lb-frontend",{
+const frontendService=new gcp.compute.RegionBackendService("lb-frontend",{
+    region,
     protocol: "HTTP",
     loadBalancingScheme: "EXTERNAL_MANAGED",
     timeoutSec: 30,
@@ -182,9 +193,8 @@ const frontendService=new gcp.compute.BackendService("lb-frontend",{
 });
 
 // Path-based routing: API + call routes → backend, everything else → frontend
-// The web worker uses relative paths (e.g. fetch('/login'), fetch('/call/create'))
-// so the backend Cloud Run URL is never exposed to the client.
-const urlMap=new gcp.compute.URLMap("lb-url-map",{
+const urlMap=new gcp.compute.RegionUrlMap("lb-url-map",{
+    region,
     defaultService: frontendService.id,
     hostRules: [{
         hosts: ["yourdomain.com"],
@@ -202,22 +212,26 @@ const urlMap=new gcp.compute.URLMap("lb-url-map",{
     }],
 });
 
-// SSL certificate for https proxy
-const cert=new gcp.compute.ManagedSslCertificate("lb-cert",{
+// Regional Google-managed SSL certificate via Certificate Manager
+const cert=new gcp.certificatemanager.Certificate("lb-cert",{
+    location: region,
     managed: {domains: ["yourdomain.com"]},
 });
 
-const httpsProxy=new gcp.compute.TargetHttpsProxy("lb-https-proxy",{
+const httpsProxy=new gcp.compute.RegionTargetHttpsProxy("lb-https-proxy",{
+    region,
     urlMap: urlMap.id,
-    sslCertificates: [cert.id],
+    certificateManagerCertificates: [pulumi.interpolate`//certificatemanager.googleapis.com/${cert.id}`],
 });
 
-// The Global Forwarding Rule (app entry point) maps the IP address to the HTTPS proxy
-const forwardingRule=new gcp.compute.GlobalForwardingRule("lb-forwarding-rule",{
+// Regional Forwarding Rule maps the IP to the HTTPS proxy
+const forwardingRule=new gcp.compute.ForwardingRule("lb-forwarding-rule",{
+    region,
     target: httpsProxy.id,
     portRange: "443",
     loadBalancingScheme: "EXTERNAL_MANAGED",
     ipAddress: ip.address,
+    networkTier: "STANDARD",
 });
 
 export const lbIp=ip.address;
