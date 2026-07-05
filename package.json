@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "P2P Video Chat Web App built with Express.js, WebSockets & WebRTC",
   "scripts": {
+    "setup:win": "powershell -ExecutionPolicy Bypass -File setup.ps1",
+    "setup:unix": "bash setup.sh",
     "dev": "concurrently \"npm run run-signalling-api\" \"npm run run-video-chat-frontend\"",
     "halt-dev": "concurrently \"npm run halt-local-db\" \"npm run halt-video-chat-frontend\" \"npm run halt-signalling-api\" \"cd web-socket-api/src && docker compose down mysql-db\"",
     "run-video-chat-frontend": "cd web-server && docker compose watch web-server-dev",

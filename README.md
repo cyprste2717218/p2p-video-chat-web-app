@@ -29,6 +29,20 @@
 
 A peer-to-peer video chat application built with an Astro/React frontend and a Node.js signalling stack. Users authenticate then create or join calls through an Express.js API, which provisions per-call WebSocket servers for session coordination. WebRTC handles media between peers once signalling completes.
 
+## Contents
+
+- [Overview](#overview)
+- [Project Structure](#project-structure)
+- [Local Setup](#local-setup)
+- [Signalling Server (Express.js API)](#signalling-server-expressjs-api)
+  - [API Routes](#api-routes)
+  - [Authentication](#authentication)
+  - [WebSocket Signalling](#websocket-signalling-per-call)
+  - [API Examples](#api-examples)
+  - [Environment Variables](#environment-variables)
+- [Frontend (Astro + React)](#frontend-astro--react)
+- [Gotchas & Experimentation](#gotchas--experimentation)
+
 ## Overview
 
 This project demonstrates a classic WebRTC architecture: an HTTP API and WebSocket layer for **signalling** (call creation, join/leave, SDP offers, chat), and the browser for **media** (camera/microphone via `getUserMedia`, peer connections via `RTCPeerConnection`).
@@ -108,69 +122,49 @@ video-chat-application/
 
 ### Prerequisites
 
+- [Docker](https://docs.docker.com/desktop/setup/install/windows-install/) (v28+)
 - [Node.js](https://nodejs.org/) (LTS recommended)
 - Git
 - A machine with camera/microphone access for testing WebRTC
 
-### 1. Clone and install API dependencies
+### 1. Clone repo, install npm deps & build dev docker images
 
+
+On Unix/macOS:
 ```bash
-git clone <repository-url>
-cd video-chat-application
-cd web-socket-api
-npm install
+# Clones the repo
+git clone https://github.com/cyprste2717218/p2p-video-chat-web-app
+
+# Auto installs the npm dependencies and builds the development docker images
+npm run setup:unix
 ```
 
-### 2. Run the Express signalling API
+On Windows:
+```bash
+# Clones the repo
+git clone https://github.com/cyprste2717218/p2p-video-chat-web-app
 
-From the `web-socket-api/src` directory:
+# Auto installs the npm dependencies and builds the development docker images
+npm run setup:win
+```
+
+Note: the `npm run setup:[OS]` commands above aren't technically necessary for developing using the docker containers as they will setup their own dependencies from scratch. However, they will help you avoid a lot of in-editor errors related to typing and package imports that could be inconvenient!
+
+### 2. Run the docker dev containers
+
+Spins up the built images for the Astro.js/React SSR frontend (`web-server-dev:1.0.0`), the Express.js/WebSockets backend (`europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-backend:1.0.0`) and pulls/builds the MySQL 8.4 image (`mysql:8.4`)
+
+#### From the root (same terminal output)
 
 ```bash
 npm run dev
 ```
 
-Default: `http://<HOST>:3000` (`3000` is fallback if `NODE_ENV` environment variable not provided via `web-socket-api/src/.env` ).
+### 3. Navigate to the UI
 
-Alternatively, from the repo root:
-
-```bash
-npm run run-signalling-api
-```
-
-Or using the Docker dev image (from `web-socket-api/src/`):
-
-```bash
-docker compose up web-socket-api-dev
-```
-
-This mounts the source directory and watches for changes, so no rebuild is needed during development.
-
-### 3. Run the Astro frontend
-
-From the `web-server` directory:
-
-```bash
-cd ../web-server
-npm run dev
-```
+If the docker container setup went well then the frontend should be accessible at the following URL and ready for use!:
 
 App URL: **[http://localhost:4321/](http://localhost:4321/)**
-
-From the repo root:
-
-```bash
-npm run run-video-chat-frontend
-```
-
-Or using the Docker dev image (from `web-server/`):
-
-```bash
-docker compose up web-server-dev
-```
-
-This uses `Dockerfile.dev` and syncs local file changes into the container automatically.
-
-**Production image:** `Dockerfile` produces a production-optimised image (`voneo-web-server`). This image is used in GCP deployments — it is pushed to Artifact Registry and referenced by the Cloud Run service provisioned via the Pulumi stack in `infra/`.
 
 ---
 
@@ -361,6 +355,20 @@ Plain JS Web Worker served from `public/`. Owns the `TokenService` class which h
 ### CSP middleware (`src/middleware.ts`)
 
 Sets a nonce-based `Content-Security-Policy` header on every response in production. Skipped in dev mode to avoid blocking Vite's HMR and dev toolbar scripts. Directives cover `script-src`, `worker-src`, `connect-src` (API + WebSocket), `media-src`, `style-src`, `img-src`, `object-src`, and `base-uri`.
+
+### Dockerfiles
+
+There are two dockerfiles for the frontend in `web-server/`:
+
+- `Dockerfile.dev`:
+
+Created for local development and syncs local file changes into the container automatically.
+
+- `Dockerfile`:
+
+Produces a production-optimised image (`europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-frontend:1.0.0`).
+
+This image is used in GCP deployments - it is pushed to Artifact Registry and referenced by the Cloud Run service provisioned via the Pulumi stack in `infra/`.
 
 ---
 

@@ -11,6 +11,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    image: web-server-dev:1.0.0
     ports:
       - "4321:4321"
     develop:
