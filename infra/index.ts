@@ -47,6 +47,7 @@ const voneoFrontend=new gcp.cloudrunv2.Service("default",{
     deletionProtection: false,
     ingress: "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
     scaling: {
+        minInstanceCount: 0,
         maxInstanceCount: 1,
     },
     template: {
@@ -107,6 +108,7 @@ const voneoBackend=new gcp.cloudrunv2.Service("default",{
     deletionProtection: false,
     ingress: "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
     scaling: {
+        minInstanceCount: 0,
         maxInstanceCount: 1,
     },
     template: {
