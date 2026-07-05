@@ -34,6 +34,22 @@ async function seed() {
 	}
 }
 
-sequelize.sync().then(() => process.env.NODE_ENV === 'dev' && seed());
+async function syncWithRetry(retries = 5, delay = 3000) {
+	for (let i = 0; i < retries; i++) {
+		try {
+			await sequelize.sync();
+			if (process.env.NODE_ENV === 'dev') await seed();
+			return;
+		} catch {
+			if (i < retries - 1) await new Promise(r => setTimeout(r, delay));
+			else throw new Error('Could not connect to database after retries');
+		}
+	}
+}
+
+syncWithRetry().catch(err => {
+	console.error('Database connection failed:', err.message);
+	process.exit(1);
+});
 
 module.exports={sequelize,User,Call,RefreshToken,CallParticipants,Op};

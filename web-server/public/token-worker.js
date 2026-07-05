@@ -16,12 +16,16 @@ export class TokenService {
 }
 
 const tokenService=new TokenService();
+let apiBase="";
 
 onmessage=async function(event) {
 	console.log("triggered the token worker");
 	const {messageType,requestBody}=event.data;
 
 	switch (messageType) {
+		case 'Init':
+			apiBase=event.data.apiBase ?? "";
+			break;
 		case 'ReqLogin':
 			const loginResult=await handleLogin(requestBody);
 			postMessage(loginResult);
@@ -53,7 +57,7 @@ async function handleLogin(requestBody) {
 
 	const resultMessage={message: "",type: "ResLogin"};
 
-	const result=await fetch(`http://localhost:3000/login`,{
+	const result=await fetch(`${apiBase}/login`,{
 		method: "POST",
 		body: JSON.stringify(requestBody),
 		headers: {
@@ -88,7 +92,7 @@ async function handleRegister(requestBody) {
 
 	const resultMessage={message: "",type: "ResSignup"};
 
-	const result=await fetch(`http://localhost:3000/signup`,{
+	const result=await fetch(`${apiBase}/signup`,{
 		method: "POST",
 		body: JSON.stringify(requestBody),
 		headers: {
@@ -118,7 +122,7 @@ async function handleLogout() {
 
 	const resultMessage={message: "",type: "ResLogout"};
 
-	const result=await fetch(`http://localhost:3000/logout`,{
+	const result=await fetch(`${apiBase}/logout`,{
 		method: "POST",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",
@@ -152,7 +156,7 @@ async function handleCreateCall() {
 
 	const resultMessage={message: "",type: "ResCreateCall"};
 
-	const result=await fetch("http://localhost:3000/call/create",{
+	const result=await fetch(`${apiBase}/call/create`,{
 		method: "POST",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",
@@ -189,7 +193,7 @@ async function handleJoinCall(requestBody) {
 	const resultMessage={message: "",type: "ResJoinCall"};
 	const callID=requestBody;
 
-	const result=await fetch(`http://localhost:3000/call/${callID}/join`,{
+	const result=await fetch(`${apiBase}/call/${callID}/join`,{
 		method: "PUT",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",

@@ -3,6 +3,7 @@ let workerInstance: Worker|null=null;
 function getWorker(): Worker {
   if (!workerInstance) {
     workerInstance=new Worker("/token-worker.js",{type: "module"});
+    workerInstance.postMessage({messageType: "Init",apiBase: import.meta.env.MODE==="development"? "http://localhost:3000":""});
   }
   return workerInstance;
 }

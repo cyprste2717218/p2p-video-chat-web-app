@@ -36,10 +36,34 @@ const refreshTokenSecretVersion=new gcp.secretmanager.SecretVersion("refresh-tok
     secretData: refreshTokenSecret,
 });
 
-// Voneo Backend - Google Cloud Run Service
+
+// Voneo Frontend - Google Cloud V2 Run Service
+
+const frontendImageTag=config.get("frontendImageTag")??"latest";
+
+const voneoFrontend=new gcp.cloudrunv2.Service("default",{
+    name: "voneo-frontend",
+    location: "europe-west2",
+    deletionProtection: false,
+    ingress: "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER",
+    scaling: {
+        maxInstanceCount: 2,
+    },
+    template: {
+        containers: [{
+            image: `europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-frontend:${frontendImageTag}`,
+        }],
+    },
+    traffics: [{
+        type: "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST",
+        percent: 100,
+    }],
+});
+
+// Voneo Backend - Google Cloud V2 Run Service
 
 const dbInstance=new gcp.sql.DatabaseInstance("instance",{
-    name: "cloudrun-sql",
+    name: "voneo-db",
     region: "europe-west2",
     databaseVersion: "MYSQL_8_4",
     settings: {
@@ -71,7 +95,7 @@ for (const {name,secret} of secretIds) {
     },{dependsOn: [secret]});
 }
 
-const imageTag=config.get("imageTag")??"latest";
+const backendImageTag=config.get("backendImageTag")??"latest";
 
 const voneoBackend=new gcp.cloudrunv2.Service("default",{
     name: "voneo-backend",
@@ -89,11 +113,11 @@ const voneoBackend=new gcp.cloudrunv2.Service("default",{
             },
         }],
         containers: [{
-            image: `europe-west2-docker.pkg.dev/signalling-api/YOUR_REPO/voneo-backend:${imageTag}`,
+            image: `europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-backend:${backendImageTag}`,
             envs: [
                 {name: "NODE_ENV",value: "production"},
-                {name: "DB_NAME",value: "voneo"},
-                {name: "DB_HOST",value: "/cloudsql"},
+                {name: "DB_NAME",value: "voneo-db"},
+                {name: "DB_HOST",value: pulumi.interpolate`/cloudsql/${dbInstance.connectionName}`},
                 {name: "DB_PORT",value: "3306"},
                 {
                     name: "DB_PASSWORD",
@@ -129,24 +153,53 @@ const voneoBackend=new gcp.cloudrunv2.Service("default",{
 // IP for Global External ALB
 const ip=new gcp.compute.GlobalAddress("lb-ip",{});
 
-// NEG poining to cloud run service for the voneo Backend
-const neg=new gcp.compute.RegionNetworkEndpointGroup("cloudrun-neg",{
+// NEG for the backend Cloud Run service
+const backendNeg=new gcp.compute.RegionNetworkEndpointGroup("backend-neg",{
     region: "europe-west2",
     networkEndpointType: "SERVERLESS",
     cloudRun: {service: voneoBackend.name},
 });
 
-// Wraps the NEG and defines how the LB talks to it
-const backend=new gcp.compute.BackendService("lb-backend",{
+// NEG for the frontend Cloud Run service
+const frontendNeg=new gcp.compute.RegionNetworkEndpointGroup("frontend-neg",{
+    region: "europe-west2",
+    networkEndpointType: "SERVERLESS",
+    cloudRun: {service: voneoFrontend.name},
+});
+
+const backendService=new gcp.compute.BackendService("lb-backend",{
     protocol: "HTTP",
     loadBalancingScheme: "EXTERNAL_MANAGED",
     timeoutSec: 3600,
-    backends: [{group: neg.id}],
+    backends: [{group: backendNeg.id}],
 });
 
-// mappings between hostnames to url paths
+const frontendService=new gcp.compute.BackendService("lb-frontend",{
+    protocol: "HTTP",
+    loadBalancingScheme: "EXTERNAL_MANAGED",
+    timeoutSec: 30,
+    backends: [{group: frontendNeg.id}],
+});
+
+// Path-based routing: API + call routes → backend, everything else → frontend
+// The web worker uses relative paths (e.g. fetch('/login'), fetch('/call/create'))
+// so the backend Cloud Run URL is never exposed to the client.
 const urlMap=new gcp.compute.URLMap("lb-url-map",{
-    defaultService: backend.id,
+    defaultService: frontendService.id,
+    hostRules: [{
+        hosts: ["yourdomain.com"],
+        pathMatcher: "voneo-paths",
+    }],
+    pathMatchers: [{
+        name: "voneo-paths",
+        defaultService: frontendService.id,
+        pathRules: [
+            // Auth routes
+            {paths: ["/signup","/login","/logout","/refresh"],service: backendService.id},
+            // Call routes
+            {paths: ["/call","/call/*"],service: backendService.id},
+        ],
+    }],
 });
 
 // SSL certificate for https proxy
