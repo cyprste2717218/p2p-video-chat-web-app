@@ -9,7 +9,6 @@ const server=http.createServer(app);
 
 app.use(cookieParser());
 const ALLOWED_ORIGINS=[
-	'http://localhost:4321',
 	'https://distill-goldmine-cheddar.ngrok-free.dev'
 ];
 app.use(cors(
