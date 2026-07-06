@@ -4,7 +4,9 @@ const {handleNewParticipantOnCall,handleChatMessage,handleOffer,handleAnswer,han
 const {wss}=require('./session-store');
 
 exports.handleUpgrade=(req,socket,head) => {
-	const match=req.url.match(/^\/ws\/([\w-]+)$/);
+	console.log("connection upgrade in progress...");
+
+	const match=req.url.match(/^\/wss\/([\w-]+)$/);
 	if (!match) return socket.destroy();
 	const callID=match[1];
 	const entry=wss.find(s => callID in s);
@@ -12,6 +14,8 @@ exports.handleUpgrade=(req,socket,head) => {
 	entry[callID].handleUpgrade(req,socket,head,(ws) => {
 		entry[callID].emit('connection',ws,req);
 	});
+
+	console.log("connection upgrade finished");
 };
 
 
@@ -79,7 +83,17 @@ exports.createWebSocketsServer=async () => {
 
 	}
 
+	const isProd=process.env.NODE_ENV==='production';
+
 	const callID=uuid.v4();
+
+	let portNum=3000; // hardcoded port if in dev mode (NODE_ENV = 'dev')
+
+	if (isProd) {
+		//creating a websocket server at random port 
+		portNum=await setRandomPort();
+	}
+
 
 	try {
 

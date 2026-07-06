@@ -10,7 +10,7 @@ const server=http.createServer(app);
 app.use(cookieParser());
 const ALLOWED_ORIGINS=[
 	'http://localhost:4321',
-	'https://distill-goldmine-cheddar.ngrok-free.dev:3000'
+	'https://distill-goldmine-cheddar.ngrok-free.dev'
 ];
 app.use(cors(
 	process.env.NODE_ENV==='dev'
@@ -30,9 +30,8 @@ app.use('/call',callRoutes);
 const {handleUpgrade}=require('./call/utils/ws-server');
 server.on('upgrade',(req,socket,head) => handleUpgrade(req,socket,head));
 
-const PORT=process.env.PORT||3000;
-const HOST=process.env.HOST||'0.0.0.0';
+const HOST='0.0.0.0';
 
-server.listen(PORT,HOST,() => {
-	console.log(`Server running on http://${HOST}:${PORT}`);
+server.listen(3000,HOST,() => {
+	console.log(`Server running on http://${HOST}:3000`);
 });

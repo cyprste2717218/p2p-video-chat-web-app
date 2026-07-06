@@ -75,13 +75,17 @@ exports.verifyClient=(info) => {
 exports.constructURI=async (callID) => {
 
 	const isProd=process.env.NODE_ENV==='production';
-
 	const host=process.env.WS_HOST;
-	const port=process.env.PORT||3000;
 
 	if (isProd) {
+		const relevantWSS=await exports.getRelevantWSS(callID);
+
+		const addressInfo=relevantWSS.address();
+		const port=addressInfo.port;
+
 		return `wss://${host}:${port}`;
 	}
+
 	return `${host}/wss/${callID}`;
 }
 
