@@ -34,7 +34,7 @@ onmessage=async function(event) {
 
 	switch (messageType) {
 		case 'Init':
-			apiBase=event.data.apiBase??`https://${self.location.hostname}:3000`;
+			apiBase=event.data.apiBase??`https://${self.location.hostname}`;
 			break;
 		case 'ReqLogin':
 			const loginResult=await handleLogin(requestBody);

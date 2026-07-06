@@ -74,19 +74,15 @@ exports.verifyClient=(info) => {
 
 exports.constructURI=async (callID) => {
 
-	// constructing URI of WS server created
-	const relevantWSS=await exports.getRelevantWSS(callID);
-	const addressInfo=relevantWSS.address();
+	const isProd=process.env.NODE_ENV==='production';
 
-	const host=process.env.WS_HOST||(addressInfo.address==='::'? `localhost`:addressInfo.address);
-	const port=addressInfo.port;
-	const scheme='wss';
+	const host=process.env.WS_HOST;
+	const port=process.env.PORT||3000;
 
-	const uri=`${scheme}://${host}:${port}`;
-
-
-	console.log("this is the uri:",uri);
-	return uri;
+	if (isProd) {
+		return `wss://${host}:${port}`;
+	}
+	return `${host}/wss/${callID}`;
 }
 
 exports.sendMsgToAllParticipants=async (message,callID) => {

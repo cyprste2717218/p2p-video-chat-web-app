@@ -1,8 +1,18 @@
-//require our websocket library 
 var WebSocketServer=require('ws').Server;
 const uuid=require('uuid');
-const {handleNewParticipantOnCall,handleChatMessage,handleOffer,handleAnswer,handleICECandidate,constructURI,setRandomPort,getRelevantWSS,verifyClient}=require('./misc');
+const {handleNewParticipantOnCall,handleChatMessage,handleOffer,handleAnswer,handleICECandidate,constructURI,getRelevantWSS,verifyClient}=require('./misc');
 const {wss}=require('./session-store');
+
+exports.handleUpgrade=(req,socket,head) => {
+	const match=req.url.match(/^\/ws\/([\w-]+)$/);
+	if (!match) return socket.destroy();
+	const callID=match[1];
+	const entry=wss.find(s => callID in s);
+	if (!entry) return socket.destroy();
+	entry[callID].handleUpgrade(req,socket,head,(ws) => {
+		entry[callID].emit('connection',ws,req);
+	});
+};
 
 
 exports.createWebSocketsServer=async () => {
@@ -71,14 +81,9 @@ exports.createWebSocketsServer=async () => {
 
 	const callID=uuid.v4();
 
-	//creating a websocket server at random port 
-	const portNum=await setRandomPort();
-	console.log("Port Number:",portNum);
-
-
 	try {
 
-		wss.push({[callID]: new WebSocketServer({port: portNum,perMessageDeflate: false,verifyClient: (info) => verifyClient(info),maxPayload: 64*1024})});
+		wss.push({[callID]: new WebSocketServer({noServer: true,perMessageDeflate: false,verifyClient: (info) => verifyClient(info),maxPayload: 64*1024})});
 		//console.log("these are the new Web Socket Server details:",wss);
 
 		const activeWSS=await getRelevantWSS(callID);
