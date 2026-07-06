@@ -1,10 +1,17 @@
 services:
-  signalling-server-prod:
+
+  signalling-server-dev:
     build:
       context: .
-    image: europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-backend:1.0.0
+      dockerfile: Dockerfile.dev
+    image: signalling-server-dev:1.0.0
     ports:
       - 3000:3000
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
     environment:
       - JWT_SECRET=${JWT_SECRET}
       - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
@@ -16,6 +23,22 @@ services:
     depends_on:
       mysql-db:
         condition: service_healthy
+
+  signalling-server-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-backend:1.0.0
+    ports:
+      - 3000:3000
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+      - NODE_ENV=${NODE_ENV}
+      - DB_NAME=${DB_NAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
 
   mysql-db:
       image: mysql:8.4

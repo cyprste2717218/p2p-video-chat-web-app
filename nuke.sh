@@ -21,7 +21,7 @@ echo ">>> Pruning Docker system..."
 docker system prune -f
 
 echo ">>> Rebuilding Docker images..."
-docker compose --env-file .env -f web-socket-api/src/compose.yaml build signalling-server-prod mysql-db
+docker compose --env-file .env -f web-socket-api/src/compose.yaml build signalling-server-dev mysql-db
 docker compose -f web-server/compose.yaml build web-server-dev
 
 echo ">>> Done."

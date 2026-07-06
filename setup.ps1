@@ -18,8 +18,8 @@ Set-Location infra
 npm install
 Set-Location ..
 
-Write-Host "Building signalling API image..."
-docker build -t europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-backend:1.0.0 ./web-socket-api/src
+Write-Host "Building signalling API dev image..."
+docker build -f ./web-socket-api/src/Dockerfile.dev -t signalling-server-dev:1.0.0 ./web-socket-api/src
 
 Write-Host "Building frontend dev image..."
 docker build -f ./web-server/Dockerfile.dev -t web-server-dev:1.0.0 ./web-server

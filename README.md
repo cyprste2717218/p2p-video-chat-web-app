@@ -63,6 +63,7 @@ video-chat-application/
 │   │   ├── app.js               # API entry point (port 3000 by default)
 │   │   ├── openapi.yaml         # API schema reference (may drift from implementation)
 │   │   ├── Dockerfile           # Production Docker image for the signalling API
+│   │   ├── Dockerfile.dev       # Signalling server Dev image — mounts source and watches for changes
 │   │   ├── compose.yaml         # Docker Compose services (dev)
 │   │   ├── authorization/       # Signup, login, logout, reset token provision routes
 │   │   ├── call/                # Create / join / leave call routes + WS utilities
@@ -78,7 +79,7 @@ video-chat-application/
 │       └── unit/                # Unit tests (backend utilities, i.e. token generators, helper utils)
 ├── web-server/                  # Astro.js frontend (SSR, React + Tailwind + shadcn/ui)
 │   ├── Dockerfile               # Production Docker image — serving the built Astro SSR app
-│   ├── Dockerfile.dev           # Dev Docker image — mounts source and watches for changes
+│   ├── Dockerfile.dev           # Astro SSR Dev image — mounts source and watches for changes
 │   ├── compose.yaml             # Docker Compose services (prod + dev)
 │   ├── public/
 │   │   └── token-worker.js      # Web Worker: token storage + all API fetch calls
@@ -156,7 +157,7 @@ Note: the `npm run setup:[OS]` commands above aren't technically necessary for d
 
 ### 2. Run the docker dev containers
 
-Spins up the built images for the Astro.js/React SSR frontend (`web-server-dev:1.0.0`), the Express.js/WebSockets backend (`europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-backend:1.0.0`) and pulls/builds the MySQL 8.4 image (`mysql:8.4`)
+Spins up the built images for the Astro.js/React SSR frontend (`web-server-dev:1.0.0`), the Express.js/WebSockets backend (`signalling-server-dev:1.0.0`) and pulls/builds the MySQL 8.4 image (`mysql:8.4`)
 
 #### From the root (same terminal output)
 
