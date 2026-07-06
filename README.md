@@ -171,6 +171,27 @@ If the docker container setup went well then the frontend should be accessible a
 
 App URL: **[http://localhost:4321/](http://localhost:4321/)**
 
+
+To spin down the dev containers smoothly use the following command:
+
+```bash
+npm run halt-dev
+```
+
+#### Handling setup errors:
+
+If something goes wrong during setup, you can try out the `nuke` commands for unix and non-unix systems to delete and re-setup all npm dependencies, cache, docker dev images/volumes and containers:
+
+On Unix/macOS:
+
+```bash
+npm run nuke:unix
+```
+
+On Windows:
+```bash
+npm run nuke:win
+```
 ---
 
 ## Signalling Server (Express.js API)
