@@ -80,7 +80,7 @@ exports.constructURI=async (callID) => {
 	const relevantWSS=await exports.getRelevantWSS(callID);
 	const addressInfo=relevantWSS.address();
 
-	const host=addressInfo.address==='::'? `localhost`:addressInfo.address;
+	const host=process.env.WS_HOST || (addressInfo.address==='::'? `localhost`:addressInfo.address);
 	const port=addressInfo.port;
 
 	let uri;
@@ -360,7 +360,9 @@ exports.handleAnswer=async (data) => {
 
 exports.setRandomPort=async () => {
 	function generateRandomPort() {
-		return Math.floor(1000+Math.random()*9000);
+		const WS_PORT_MIN=Number(process.env.WS_PORT_MIN) || 4000;
+		const WS_PORT_MAX=Number(process.env.WS_PORT_MAX) || 4099;
+		return Math.floor(WS_PORT_MIN+Math.random()*(WS_PORT_MAX - WS_PORT_MIN + 1));
 	}
 	const isProd=process.env.NODE_ENV==="production";
 
