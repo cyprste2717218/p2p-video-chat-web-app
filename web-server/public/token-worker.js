@@ -18,13 +18,23 @@ export class TokenService {
 const tokenService=new TokenService();
 let apiBase="";
 
+function apiFetch(url,options={}) {
+	return fetch(url,{
+		...options,
+		headers: {
+			"ngrok-skip-browser-warning": "true",
+			...options.headers,
+		}
+	});
+}
+
 onmessage=async function(event) {
 	console.log("triggered the token worker");
 	const {messageType,requestBody}=event.data;
 
 	switch (messageType) {
 		case 'Init':
-			apiBase=event.data.apiBase??"";
+			apiBase=event.data.apiBase??`https://${self.location.hostname}:3000`;
 			break;
 		case 'ReqLogin':
 			const loginResult=await handleLogin(requestBody);
@@ -57,7 +67,7 @@ async function handleLogin(requestBody) {
 
 	const resultMessage={message: "",type: "ResLogin"};
 
-	const result=await fetch(`${apiBase}/auth/login`,{
+	const result=await apiFetch(`${apiBase}/auth/login`,{
 		method: "POST",
 		body: JSON.stringify(requestBody),
 		headers: {
@@ -92,7 +102,7 @@ async function handleRegister(requestBody) {
 
 	const resultMessage={message: "",type: "ResSignup"};
 
-	const result=await fetch(`${apiBase}/auth/signup`,{
+	const result=await apiFetch(`${apiBase}/auth/signup`,{
 		method: "POST",
 		body: JSON.stringify(requestBody),
 		headers: {
@@ -122,7 +132,7 @@ async function handleLogout() {
 
 	const resultMessage={message: "",type: "ResLogout"};
 
-	const result=await fetch(`${apiBase}/auth/logout`,{
+	const result=await apiFetch(`${apiBase}/auth/logout`,{
 		method: "POST",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",
@@ -156,7 +166,7 @@ async function handleCreateCall() {
 
 	const resultMessage={message: "",type: "ResCreateCall"};
 
-	const result=await fetch(`${apiBase}/call/create`,{
+	const result=await apiFetch(`${apiBase}/call/create`,{
 		method: "POST",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",
@@ -193,7 +203,7 @@ async function handleJoinCall(requestBody) {
 	const resultMessage={message: "",type: "ResJoinCall"};
 	const callID=requestBody;
 
-	const result=await fetch(`${apiBase}/call/${callID}/join`,{
+	const result=await apiFetch(`${apiBase}/call/${callID}/join`,{
 		method: "PUT",
 		headers: {
 			"Content-type": "application/json; charset=UTF-8",

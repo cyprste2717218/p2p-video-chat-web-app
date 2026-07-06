@@ -75,20 +75,14 @@ exports.verifyClient=(info) => {
 exports.constructURI=async (callID) => {
 
 	// constructing URI of WS server created
-	const isProd=process.env.NODE_ENV==="production";
-
 	const relevantWSS=await exports.getRelevantWSS(callID);
 	const addressInfo=relevantWSS.address();
 
-	const host=process.env.WS_HOST || (addressInfo.address==='::'? `localhost`:addressInfo.address);
+	const host=process.env.WS_HOST||(addressInfo.address==='::'? `localhost`:addressInfo.address);
 	const port=addressInfo.port;
+	const scheme='wss';
 
-	let uri;
-	if (isProd) {
-		uri=`wss://${host}:${port}`;
-	} else {
-		uri=`ws://${host}:${port}`;
-	}
+	const uri=`${scheme}://${host}:${port}`;
 
 
 	console.log("this is the uri:",uri);
@@ -360,9 +354,9 @@ exports.handleAnswer=async (data) => {
 
 exports.setRandomPort=async () => {
 	function generateRandomPort() {
-		const WS_PORT_MIN=Number(process.env.WS_PORT_MIN) || 4000;
-		const WS_PORT_MAX=Number(process.env.WS_PORT_MAX) || 4099;
-		return Math.floor(WS_PORT_MIN+Math.random()*(WS_PORT_MAX - WS_PORT_MIN + 1));
+		const WS_PORT_MIN=Number(process.env.WS_PORT_MIN)||4000;
+		const WS_PORT_MAX=Number(process.env.WS_PORT_MAX)||4099;
+		return Math.floor(WS_PORT_MIN+Math.random()*(WS_PORT_MAX-WS_PORT_MIN+1));
 	}
 	const isProd=process.env.NODE_ENV==="production";
 
@@ -370,13 +364,8 @@ exports.setRandomPort=async () => {
 	try {
 		// checking new port does not conflict with existing WS server
 		const generatedPort=generateRandomPort();
-		let targetWSUrl;
+		const targetWSUrl=`wss://localhost:${generatedPort}`
 
-		if (isProd) {
-			targetWSUrl=`wss://localhost:${generatedPort}`
-		} else {
-			targetWSUrl=`ws://localhost:${generatedPort}`
-		}
 
 		const isURLTaken=await Call.findOne({
 			where: {
@@ -384,7 +373,7 @@ exports.setRandomPort=async () => {
 			}
 		});
 
-		if (isURLTaken) {
+		if (isURLTaken||(!isProd&&generatedPort==4321)) {
 			throw new Error("Generated port number already in use");
 		}
 

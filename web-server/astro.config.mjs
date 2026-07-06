@@ -14,6 +14,9 @@ export default defineConfig({
   server: {
     host: true,
     port: 4321,
+    ...(process.env.NODE_ENV==='dev'&&{
+      allowedHosts: ['distill-goldmine-cheddar.ngrok-free.dev']
+    })
   },
   security: {
     checkOrigin: true,

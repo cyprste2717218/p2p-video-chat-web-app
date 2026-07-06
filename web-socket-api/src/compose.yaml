@@ -21,7 +21,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
-      - WS_HOST=localhost
+      - WS_HOST=${WS_HOST}
       - WS_PORT_MIN=4000
       - WS_PORT_MAX=4099
     depends_on:

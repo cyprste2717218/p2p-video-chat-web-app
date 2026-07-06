@@ -3,6 +3,7 @@ web-socket-api/tests/node_modules
 web-socket-api/src/storage/data.db
 web-socket-api/src/.env
 node_modules
+ngrok.yml
 
 # Playwright
 /test-results/

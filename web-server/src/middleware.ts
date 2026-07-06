@@ -27,7 +27,7 @@ export const onRequest=defineMiddleware(async (context,next) => {
 		.replace(/<link(?=[\s>])/g,`<link nonce="${nonce}"`);
 
 	// Define the strict-dynamic CSP header policy
-	const apiOrigin=import.meta.env.API_ORIGIN??'http://localhost:3000';
+	const apiOrigin=import.meta.env.PUBLIC_API_ORIGIN??import.meta.env.API_ORIGIN??'http://localhost:3000';
 	// Extract the hostname to allow WebSocket connections on any port (per-call WS servers use random ports)
 	const wsHost=new URL(apiOrigin).hostname;
 	const wsOrigin=`ws://${wsHost}:*`;
