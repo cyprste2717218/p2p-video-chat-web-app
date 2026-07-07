@@ -26,8 +26,9 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Pulumi](https://img.shields.io/badge/Pulumi-8A3391?logo=pulumi&logoColor=white)](https://www.pulumi.com/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![ngrok](https://img.shields.io/badge/ngrok-1F232C?style=flat&logo=ngrok&logoColor=white)](https://ngrok.com/)
 
-A peer-to-peer video chat application built with an Astro/React frontend and a Node.js signalling stack. Users authenticate then create or join calls through an Express.js API, which provisions per-call WebSocket servers for session coordination. WebRTC handles media between peers once signalling completes.
+Voneo is a peer-to-peer video chat application built with an Astro/React frontend and a Node.js signalling stack. Users authenticate then create or join calls through an Express.js API, which provisions per-call WebSocket servers for session coordination. WebRTC handles media between peers once signalling completes.
 
 ## Contents
 
@@ -110,6 +111,7 @@ video-chat-application/
 ├── .prettierrc                  # Prettier configuration
 ├── package.json                 # Root scripts to run both servers
 ├── playwright.config.ts         # Playwright configuration
+├── ngrok.example.yml            # Ngrok tunnel config
 ├── setup.ps1                    # Windows setup script (installs deps, builds dev images)
 ├── setup.sh                     # Unix/macOS setup script (installs deps, builds dev images)
 ├── nuke.ps1                     # Windows teardown script (removes containers, images, volumes, deps and rebuilds dev images and reinstalls deps)
@@ -129,7 +131,8 @@ video-chat-application/
 
 - [Docker](https://docs.docker.com/desktop/setup/install/windows-install/) (v28+)
 - [Node.js](https://nodejs.org/) (LTS recommended)
-- Git
+- [Ngrok](https://ngrok.com/download/windows) 
+- [Git](https://git-scm.com/install/windows)
 - A machine with camera/microphone access for testing WebRTC
 
 ### 1. Clone repo, install npm deps & build dev docker images
@@ -155,21 +158,47 @@ npm run setup:win
 
 Note: the `npm run setup:[OS]` commands above aren't technically necessary for developing using the docker containers as they will setup their own dependencies from scratch. However, they will help you avoid a lot of in-editor errors related to typing and package imports that could be inconvenient!
 
-### 2. Run the docker dev containers
+### 2. Provide your Ngrok auth token in `ngrok.yml`
+
+- Copy `ngrok.example.yml` to `ngrok.yml`
+- [Create an Ngrok account](https://dashboard.ngrok.com/login)
+- Grab your account Auth Token and put it in the `authtoken` field in your new `ngrok.yml`.
+Alternatively you can add your authtoken to the default `ngrok.yml` configuration file at your system root using the following command:
+
+```bash
+ngrok config add-authtoken $YOUR_AUTHTOKEN
+```
+
+For further details, [refer to the Ngrok setup instructions here](https://dashboard.ngrok.com/get-started/setup/)
+
+### 3. Create the .env in the root
+
+Copy `.env.example` to new `.env`:
+
+Note: you will need to replace the `WS_HOST` in `.env` with the ngrok tunnel URL prefixed explicitly by `wss://`. Otherwise the current defaults should be sufficient for local dev.
+
+
+### 4. Run the docker dev containers
 
 Spins up the built images for the Astro.js/React SSR frontend (`web-server-dev:1.0.0`), the Express.js/WebSockets backend (`signalling-server-dev:1.0.0`) and pulls/builds the MySQL 8.4 image (`mysql:8.4`)
-
-#### From the root (same terminal output)
 
 ```bash
 npm run dev
 ```
 
-### 3. Navigate to the UI
+### 5. Start the Ngrok tunnel
 
-If the docker container setup went well then the frontend should be accessible at the following URL and ready for use!:
+```bash
+npm run tunnel
+```
 
-App URL: **[http://localhost:4321/](http://localhost:4321/)**
+### 6. Navigate to the UI
+
+If the docker container setup went well then the frontend should be accessible at the your Ngrok tunnel URL in the browser and ready for use!:
+
+For example:
+
+App URL: **https://horizon-velvet-symphony.ngrok-free.dev/**
 
 
 To spin down the dev containers smoothly use the following command:
@@ -236,8 +265,8 @@ npm run nuke:win
 
 | Method | Path                  | Auth | Request                                                 | Success response                                                                     |
 | ------ | --------------------- | ---- | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `POST` | `/call/create`        | Yes  | —                         | `201` — `{ "success": true, "data": { "callID": "<uuid>", "callURL": "ws://..." } }` |
-| `PUT`  | `/call/:callID/join`  | Yes  | Params: `callID` (UUID) | `200` — `{ "success": true, "data": { "callURL": "ws://..." }}`                     |
+| `POST` | `/call/create`        | Yes  | —                         | `201` — `{ "success": true, "data": { "callID": "<uuid>", "callURL": "wss://..." } }` |
+| `PUT`  | `/call/:callID/join`  | Yes  | Params: `callID` (UUID) | `200` — `{ "success": true, "data": { "callURL": "wss://..." }}`                     |
 | `DELETE`  | `/call/:callID/leave` | Yes  | Params: `callID` (UUID)                                               | `200` — `{ "success": true, "data": { "message": "Succesfully left call" }}`                                                                     |
 | `POST`  | `/call/:callID/messages` | Yes  | Params: `callID` (UUID)                                               | `201` — `{ "success": true, "data": { "message": "Message sent to all call participants succesfully" }}`   
 
@@ -366,7 +395,7 @@ A `.env.example` file has been defined using these defaults for local testing. F
 
 ## Frontend (Astro + React)
 
-**Framework:** Astro (SSR via `@astrojs/node`), port **4321** in dev (`npm run dev` from `web-server/`).
+**Framework:** Astro (SSR via `@astrojs/node`), accessed via Ngrok tunnel (e.g. `https://horizon-velvet-symphony.ngrok-free.dev/`) request forwarding to docker container spun up from image `web-server-dev:1.0.0`.
 
 **Entry:** `src/pages/index.astro` imports global CSS and renders `<App client:load />`.
 
