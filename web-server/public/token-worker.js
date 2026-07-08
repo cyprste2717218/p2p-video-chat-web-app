@@ -230,6 +230,34 @@ async function handleJoinCall(requestBody) {
 	return resultMessage;
 }
 
-async function handleLeaveCall() {
-	/* To be implemented */
+async function handleLeaveCall(requestBody) {
+
+	const resultMessage={message: "",type: "ResLeaveCall"};
+	const callID=requestBody;
+
+	const result=await apiFetch(`${apiBase}/call/${callID}/leave`,{
+		method: "DELETE",
+		headers: {
+			"Content-type": "application/json; charset=UTF-8",
+			"Authorization": `Bearer ${tokenService.getToken()}`
+		}
+	});
+
+	if (result.ok) {
+		const dataBody=await result.json();
+
+		const {success,data}=dataBody;
+
+		if (!success) {
+			resultMessage.message="Leave new call failed";
+			return resultMessage;
+		}
+
+		const {message}=data;
+		resultMessage.message=message;
+	} else {
+		resultMessage.message="Leave new call failed";
+	}
+
+	return resultMessage;
 }

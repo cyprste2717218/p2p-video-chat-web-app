@@ -1,14 +1,14 @@
-import React, { useState } from "react";
+import React,{useState} from "react";
 import AuthScreen from "@/components/AuthScreen";
 import CallScreen from "@/components/CallScreen";
 
 export default function App() {
-  const [user, setUser] = useState<{ email: string; username: string } | null>(null);
+  const [user,setUser]=useState<{email: string; username: string}|null>(null);
 
   if (!user) {
     return (
       <AuthScreen
-        onAuthenticated={(email, username) => setUser({ email, username })}
+        onAuthenticated={(email,username) => setUser({email,username})}
       />
     );
   }

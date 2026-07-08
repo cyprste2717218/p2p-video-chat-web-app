@@ -18,7 +18,7 @@ interface CallScreenProps {
 }
 
 export default function CallScreen({email,username,onLogout}: CallScreenProps) {
-  const {createCall,joinCall,logout}=useTokenWorker();
+  const {createCall,joinCall,leaveCall,logout}=useTokenWorker();
   const localVideoRef=useRef<HTMLVideoElement>(null);
 
   const [activeCallID,setActiveCallID]=useState<string|null>(null);
@@ -69,6 +69,35 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
     } finally {
       setLoading(null);
     }
+  }
+
+  async function handleLeave() {
+
+    setError("");
+    setLoading("create");
+
+
+    try {
+      setActiveCallID(null);
+      setRemoteStreams([]);
+      setParticipants([]);
+      setMessages([]);
+
+      if (!activeCallID) {
+        throw new Error("Can't access active callID")
+      }
+
+      await leaveCall(activeCallID);
+
+    } catch (err) {
+      setError("Failed to leave call. Please try again:");
+      console.error(err);
+    } finally {
+      setLoading(null);
+    }
+
+
+
   }
 
   async function handleLogout() {
@@ -151,12 +180,7 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => {
-                  setActiveCallID(null);
-                  setRemoteStreams([]);
-                  setParticipants([]);
-                  setMessages([]);
-                }}
+                onClick={handleLeave}
               >
                 <PhoneOff className="h-4 w-4 mr-1.5" />
                 Hang Up

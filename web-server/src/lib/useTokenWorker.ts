@@ -43,5 +43,9 @@ export function useTokenWorker() {
     return ask("ReqJoinCall","ResJoinCall",callID) as Promise<string>;
   }
 
-  return {login,register,logout,createCall,joinCall};
+  async function leaveCall(callID: string): Promise<string> {
+    return ask("ReqLeaveCall","ResLeaveCall",callID) as Promise<string>;
+  }
+
+  return {login,register,logout,createCall,joinCall,leaveCall};
 }
