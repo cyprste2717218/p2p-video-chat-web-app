@@ -4,7 +4,7 @@ import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
 import {Separator} from "@/components/ui/separator";
 import {useTokenWorker} from "@/lib/useTokenWorker";
-import {connectToCall,sendChatMessageToCall,closeConns} from "@/lib/rtcUtils";
+import {connectToCall,sendChatMessageToCall,closeConns,closeWebSocketServerConn} from "@/lib/rtcUtils";
 import VideoGrid from "@/components/VideoGrid";
 import ChatPanel from "@/components/ChatPanel";
 import {PhoneOff,Video,LogOut} from "lucide-react";
@@ -93,6 +93,7 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
       }
 
       await leaveCall(activeCallID);
+      await closeWebSocketServerConn(activeCallID);
       await closeConns(remoteVideoRefs,updateRemoteVideo,getRemoteVideo);
 
       setActiveCallID(null);
