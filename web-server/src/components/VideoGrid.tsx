@@ -1,6 +1,6 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Card} from "@/components/ui/card";
 
 interface RemoteStream {
   peerUser: string;
@@ -8,13 +8,13 @@ interface RemoteStream {
 }
 
 interface VideoGridProps {
-  localVideoRef: React.RefObject<HTMLVideoElement | null>;
+  localVideoRef: React.RefObject<HTMLVideoElement|null>;
   remoteStreams: RemoteStream[];
 }
 
-function VideoTile({ label, videoRef, muted = false }: {
+function VideoTile({label,videoRef,muted=false}: {
   label: string;
-  videoRef?: React.RefObject<HTMLVideoElement | null>;
+  videoRef?: React.RefObject<HTMLVideoElement|null>;
   muted?: boolean;
   stream?: MediaStream;
 }) {
@@ -34,17 +34,17 @@ function VideoTile({ label, videoRef, muted = false }: {
   );
 }
 
-function RemoteTile({ peerUser, stream }: RemoteStream) {
-  const ref = React.useRef<HTMLVideoElement>(null);
+function RemoteTile({peerUser,stream}: RemoteStream) {
+  const ref=React.useRef<HTMLVideoElement>(null);
 
   React.useEffect(() => {
-    if (ref.current) ref.current.srcObject = stream;
-  }, [stream]);
+    if (ref.current) ref.current.srcObject=stream;
+  },[stream]);
 
   return <VideoTile label={peerUser} videoRef={ref} />;
 }
 
-export default function VideoGrid({ localVideoRef, remoteStreams }: VideoGridProps) {
+export default function VideoGrid({localVideoRef,remoteStreams}: VideoGridProps) {
   return (
     <div className="flex flex-wrap gap-3 w-full">
       <VideoTile label="You" videoRef={localVideoRef} muted />

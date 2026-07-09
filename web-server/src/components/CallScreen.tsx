@@ -4,7 +4,7 @@ import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
 import {Separator} from "@/components/ui/separator";
 import {useTokenWorker} from "@/lib/useTokenWorker";
-import {connectToCall,sendChatMessageToCall} from "@/lib/rtcUtils";
+import {connectToCall,sendChatMessageToCall,closeConns} from "@/lib/rtcUtils";
 import VideoGrid from "@/components/VideoGrid";
 import ChatPanel from "@/components/ChatPanel";
 import {PhoneOff,Video,LogOut} from "lucide-react";
@@ -20,6 +20,7 @@ interface CallScreenProps {
 export default function CallScreen({email,username,onLogout}: CallScreenProps) {
   const {createCall,joinCall,leaveCall,logout}=useTokenWorker();
   const localVideoRef=useRef<HTMLVideoElement>(null);
+  const remoteVideoRefs=useRef<HTMLVideoElement[]|[]>([]);
 
   const [activeCallID,setActiveCallID]=useState<string|null>(null);
   const [joinInput,setJoinInput]=useState("");
@@ -37,6 +38,14 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
       return [...prev,{peerUser,stream}];
     });
   }
+  function updateRemoteVideo(peerUser: string,stream: MediaStream) {
+    setRemoteStreams((prev) => {
+      return prev.map((s) => (s.peerUser===peerUser? s:{peerUser,stream}));
+    });
+  }
+  function getRemoteVideo(peerUser: string) {
+    return remoteStreams.find((s) => s.peerUser===peerUser);
+  };
 
   async function handleCreate() {
     setError("");
@@ -47,7 +56,7 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
       if ((result as unknown)==="Create new call failed") throw new Error("Create new call failed");
       const {callID,callURL}=result;
       setActiveCallID(callID);
-      await connectToCall(callURL,callID,email,username,localVideoRef,addChatMessage,addParticipant,addRemoteVideo);
+      await connectToCall(callURL,callID,email,username,localVideoRef,remoteVideoRefs,addChatMessage,addParticipant,addRemoteVideo);
     } catch {
       setError("Failed to create call.");
     } finally {
@@ -63,7 +72,7 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
       const callURL=await joinCall(joinInput.trim());
       if (callURL==="Join new call failed") throw new Error("Join new call failed");
       setActiveCallID(joinInput.trim());
-      await connectToCall(callURL as string,joinInput.trim(),email,username,localVideoRef,addChatMessage,addParticipant,addRemoteVideo);
+      await connectToCall(callURL as string,joinInput.trim(),email,username,localVideoRef,remoteVideoRefs,addChatMessage,addParticipant,addRemoteVideo);
     } catch {
       setError("Failed to join call. Check the call ID.");
     } finally {
@@ -78,16 +87,18 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
 
 
     try {
-      setActiveCallID(null);
-      setRemoteStreams([]);
-      setParticipants([]);
-      setMessages([]);
 
       if (!activeCallID) {
         throw new Error("Can't access active callID")
       }
 
       await leaveCall(activeCallID);
+      await closeConns(remoteVideoRefs,updateRemoteVideo,getRemoteVideo);
+
+      setActiveCallID(null);
+      setRemoteStreams([]);
+      setParticipants([]);
+      setMessages([]);
 
     } catch (err) {
       setError("Failed to leave call. Please try again:");
