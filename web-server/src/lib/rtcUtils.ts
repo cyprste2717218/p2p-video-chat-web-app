@@ -25,6 +25,8 @@ function createPeerConnection(
   callID: string,
   addRemoteVideo: AddRemoteVideoFn,
   remoteVideoRefs: React.RefObject<HTMLVideoElement[]|null>,
+  isParticipant: (name: string) => boolean,
+  getCurrentUser: () => string
 ): ExtendedRTCPeerConnection {
   const myPeerConnection: ExtendedRTCPeerConnection=new RTCPeerConnection({
     iceServers: [{urls: "stun:stun.stunprotocol.org"}],
@@ -47,8 +49,35 @@ function createPeerConnection(
     }
   };
 
-  myPeerConnection.onnegotiationneeded=() => console.log("Negotiation needed");
-  myPeerConnection.oniceconnectionstatechange=() => console.log("ICE connection state change");
+
+  myPeerConnection.oniceconnectionstatechange=(event) => {
+    console.log("ICE connection state change");
+
+    if ((myPeerConnection.iceConnectionState==="closed"||myPeerConnection.iceConnectionState==="failed")&&isParticipant(myPeerConnection.peerUser as string)) {
+      myPeerConnection.restartIce();
+    }
+
+  }
+
+  myPeerConnection.onconnectionstatechange=(event) => {
+    console.log("connection state change");
+
+    if (myPeerConnection.connectionState==="closed"&&isParticipant(myPeerConnection.peerUser as string)) {
+      myPeerConnection.restartIce();
+    }
+
+  }
+
+  myPeerConnection.onnegotiationneeded=() => {
+    console.log("Negotiation needed");
+
+    if (getCurrentUser()===caller) {
+      const offer=sendOffer(caller,recipient,callID,remoteVideoRefs,addRemoteVideo,isParticipant,getCurrentUser);
+
+    }
+
+  }
+
   myPeerConnection.onicegatheringstatechange=() => console.log("ICE gathering state change");
   myPeerConnection.onsignalingstatechange=() => console.log("Signalling state change");
 
@@ -62,6 +91,8 @@ function isExistingPeerConnection(
   callID: string,
   addRemoteVideo: AddRemoteVideoFn,
   remoteVideoRefs: React.RefObject<HTMLVideoElement[]|null>,
+  isParticipant: (name: string) => boolean,
+  getCurrentUser: () => string
 ): {currentPeerConnection: ExtendedRTCPeerConnection; peerConnectionIndex: number} {
   let peerConnectionIndex=peerConnectionsArr.findIndex(
     (pc) => (pc as ExtendedRTCPeerConnection).recipient===recipient&&
@@ -77,7 +108,7 @@ function isExistingPeerConnection(
   }
 
   const peerUser=type==="sendingOffer"? recipient:caller;
-  const newPeerConnection=createPeerConnection(caller,recipient,peerUser,callID,addRemoteVideo,remoteVideoRefs);
+  const newPeerConnection=createPeerConnection(caller,recipient,peerUser,callID,addRemoteVideo,remoteVideoRefs,isParticipant,getCurrentUser);
   peerConnectionsArr.push(newPeerConnection);
   peerConnectionIndex=peerConnectionsArr.length-1;
 
@@ -85,16 +116,19 @@ function isExistingPeerConnection(
 }
 
 export async function sendOffer(
-  currentUserEmail: string,
   caller: string,
   recipient: string,
   callID: string,
   remoteVideoRefs: React.RefObject<HTMLVideoElement[]|null>,
-  addRemoteVideo: AddRemoteVideoFn
+  addRemoteVideo: AddRemoteVideoFn,
+  isParticipant: (name: string) => boolean,
+  getCurrentUser: () => string
 ) {
   const {currentPeerConnection,peerConnectionIndex}=isExistingPeerConnection(
-    "sendingOffer",caller,recipient,callID,addRemoteVideo,remoteVideoRefs
+    "sendingOffer",caller,recipient,callID,addRemoteVideo,remoteVideoRefs,isParticipant,getCurrentUser
   );
+
+  const currentUserEmail=getCurrentUser();
 
   if (!localMedia) throw new Error("No local media currently captured");
 
@@ -128,12 +162,26 @@ export async function establishWebSocketServerConn(callURL: string) {
   websocket=new WebSocket(callURL);
 }
 
+export async function closeWebSocketServerConn(callID: string) {
+
+  try {
+    if (!websocket) return;
+    websocket.close();
+  } catch (err) {
+    console.error("Error trying to close web socket connection:",err);
+  }
+
+}
+
 export async function attachWSConnListeners(
   callerEmail: string,
   remoteVideoRefs: React.RefObject<HTMLVideoElement[]|null>,
   addChatMessage: (msg: string) => void,
   addParticipant: (name: string) => void,
-  addRemoteVideo: AddRemoteVideoFn
+  removeParticipant: (name: string) => void,
+  addRemoteVideo: AddRemoteVideoFn,
+  isParticipant: (name: string) => boolean,
+  getCurrentUser: () => string
 ) {
   if (!websocket) return console.error("No active websocket connection configured");
 
@@ -154,7 +202,7 @@ export async function attachWSConnListeners(
             addParticipant(p);
           });
           for (const participant of otherCallParticipants) {
-            const offer=await sendOffer(currentUserEmail,callerEmail,participant,callID,remoteVideoRefs,addRemoteVideo);
+            const offer=await sendOffer(callerEmail,participant,callID,remoteVideoRefs,addRemoteVideo,isParticipant,getCurrentUser);
             sendMsg(offer);
           }
         }
@@ -164,7 +212,7 @@ export async function attachWSConnListeners(
       case "offer": {
         const {currentUserEmail,caller,recipient,offer,callID}=data;
         const {currentPeerConnection,peerConnectionIndex}=isExistingPeerConnection(
-          "receivingOffer",caller,recipient,callID,addRemoteVideo,remoteVideoRefs
+          "receivingOffer",caller,recipient,callID,addRemoteVideo,remoteVideoRefs,isParticipant,getCurrentUser
         );
         await currentPeerConnection.setRemoteDescription({type: offer.type,sdp: offer.sdp});
         if (!localMedia) throw new Error("No local media currently captured");
@@ -182,7 +230,7 @@ export async function attachWSConnListeners(
       case "answer": {
         const {caller,recipient,answer,callID}=data;
         const {currentPeerConnection,peerConnectionIndex}=isExistingPeerConnection(
-          "receivingAnswer",caller,recipient,callID,addRemoteVideo,remoteVideoRefs
+          "receivingAnswer",caller,recipient,callID,addRemoteVideo,remoteVideoRefs,isParticipant,getCurrentUser
         );
         await currentPeerConnection.setRemoteDescription({type: answer.type,sdp: answer.sdp});
         peerConnectionsArr[peerConnectionIndex]=currentPeerConnection;
@@ -197,6 +245,12 @@ export async function attachWSConnListeners(
         if (peerConnectionsArr[idx]) {
           peerConnectionsArr[idx].addIceCandidate(new RTCIceCandidate(candidate));
         }
+        break;
+      }
+      case "participantLeftCall": {
+        const {message,email}=data;
+        addChatMessage(`${email}: ${message}`);
+        removeParticipant(email);
         break;
       }
     }
@@ -224,18 +278,23 @@ export async function connectToCall(
   remoteVideoRefs: React.RefObject<HTMLVideoElement[]|null>,
   addChatMessage: (msg: string) => void,
   addParticipant: (name: string) => void,
-  addRemoteVideo: AddRemoteVideoFn
+  removeParticipant: (name: string) => void,
+  addRemoteVideo: AddRemoteVideoFn,
+  isParticipant: (name: string) => boolean,
+  getCurrentUser: () => string
 ) {
   await getLocalMedia(localVideoRef);
   await establishWebSocketServerConn(callURL);
-  await attachWSConnListeners(email,remoteVideoRefs,addChatMessage,addParticipant,addRemoteVideo,);
+  await attachWSConnListeners(email,remoteVideoRefs,addChatMessage,addParticipant,removeParticipant,addRemoteVideo,isParticipant,getCurrentUser);
   sendJoiningMessage(username,email,callID);
 }
 
 export async function closeConns(
   remoteVideoRefs: React.RefObject<HTMLVideoElement[]|[]>,
   updateRemoteVideo: (peerUser: string,stream: MediaStream) => void,
-  getRemoteVideo: (peerUser: string) => {peerUser: string; stream: MediaStream;}|undefined) {
+  getRemoteVideo: (peerUser: string) => {peerUser: string; stream: MediaStream;}|undefined,
+  callID: string,
+  email: string) {
   async function handleClosePeerConn(pc: ExtendedRTCPeerConnection) {
     pc.ontrack=null;
     pc.onicecandidate=null;
@@ -267,17 +326,25 @@ export async function closeConns(
 
   }
 
-  peerConnectionsArr.forEach(async (pc) => {
-    const peerUser=pc.peerUser;
-    if (!peerUser) {
-      throw new Error("no peerUser defined");
-    }
+  try {
 
-    await handleClosePeerConn(pc);
-    await handleCloseVideoElem(peerUser);
+    peerConnectionsArr.forEach(async (pc) => {
+      const peerUser=pc.peerUser;
+      if (!peerUser) {
+        throw new Error("no peerUser defined");
+      }
 
-    pc.close();
-  });
+      await handleClosePeerConn(pc);
+      await handleCloseVideoElem(peerUser);
 
-  peerConnectionsArr.length=0;
+      pc.close();
+    });
+
+    peerConnectionsArr.length=0;
+
+  } catch (err) {
+
+  }
+
+
 }

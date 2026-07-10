@@ -32,6 +32,9 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
 
   function addChatMessage(msg: string) {setMessages((prev) => [...prev,msg]);}
   function addParticipant(name: string) {setParticipants((prev) => [...prev,name]);}
+  function removeParticipant(name: string) {setParticipants((prev) => prev.filter((p) => p!==name));}
+  function isParticipant(name: string) {return participants.includes(name);}
+  function getCurrentUser() {return email;}
   function addRemoteVideo(peerUser: string,stream: MediaStream) {
     setRemoteStreams((prev) => {
       if (prev.find((s) => s.peerUser===peerUser)) return prev;
@@ -56,7 +59,8 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
       if ((result as unknown)==="Create new call failed") throw new Error("Create new call failed");
       const {callID,callURL}=result;
       setActiveCallID(callID);
-      await connectToCall(callURL,callID,email,username,localVideoRef,remoteVideoRefs,addChatMessage,addParticipant,addRemoteVideo);
+      function getCurrentUser() {return username;}
+      await connectToCall(callURL,callID,email,username,localVideoRef,remoteVideoRefs,addChatMessage,addParticipant,removeParticipant,addRemoteVideo,isParticipant,getCurrentUser);
     } catch {
       setError("Failed to create call.");
     } finally {
@@ -72,7 +76,7 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
       const callURL=await joinCall(joinInput.trim());
       if (callURL==="Join new call failed") throw new Error("Join new call failed");
       setActiveCallID(joinInput.trim());
-      await connectToCall(callURL as string,joinInput.trim(),email,username,localVideoRef,remoteVideoRefs,addChatMessage,addParticipant,addRemoteVideo);
+      await connectToCall(callURL as string,joinInput.trim(),email,username,localVideoRef,remoteVideoRefs,addChatMessage,addParticipant,removeParticipant,addRemoteVideo,isParticipant,getCurrentUser);
     } catch {
       setError("Failed to join call. Check the call ID.");
     } finally {
@@ -93,8 +97,8 @@ export default function CallScreen({email,username,onLogout}: CallScreenProps) {
       }
 
       await leaveCall(activeCallID);
+      await closeConns(remoteVideoRefs,updateRemoteVideo,getRemoteVideo,activeCallID,email);
       await closeWebSocketServerConn(activeCallID);
-      await closeConns(remoteVideoRefs,updateRemoteVideo,getRemoteVideo);
 
       setActiveCallID(null);
       setRemoteStreams([]);

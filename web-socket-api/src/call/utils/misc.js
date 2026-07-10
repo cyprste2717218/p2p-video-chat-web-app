@@ -352,6 +352,36 @@ exports.handleAnswer=async (data) => {
 
 }
 
+exports.handleParticipantLeftCall=async (data) => {
+
+
+	try {
+		const {leavingUser,callID}=data;
+		const message=`${leavingUser} left the call`;
+
+		const participantNotOnCallRes=await exports.participantNotOnCall(callID,leavingUser);
+
+		if (participantNotOnCallRes) {
+			return exports.sendMessageToParticipant(leavingUser,participantNotOnCallRes,callID);
+		}
+
+		const newParticipantLeavingMessage=
+		{
+			type: 'participantLeftCall',
+			data: {
+				message: message,
+				email: leavingUser,
+			}
+		};
+
+		await exports.sendMsgToAllParticipants(newParticipantLeavingMessage,callID);
+
+
+	} catch (err) {
+		console.error("Error occured handling forwarding of answer:",err);
+	}
+}
+
 exports.setRandomPort=async () => {
 	function generateRandomPort() {
 		const WS_PORT_MIN=Number(process.env.WS_PORT_MIN)||4000;

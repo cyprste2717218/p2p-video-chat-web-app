@@ -1,6 +1,6 @@
 var WebSocketServer=require('ws').Server;
 const uuid=require('uuid');
-const {handleNewParticipantOnCall,handleChatMessage,handleOffer,handleAnswer,handleICECandidate,constructURI,getRelevantWSS,verifyClient}=require('./misc');
+const {handleNewParticipantOnCall,handleChatMessage,handleOffer,handleAnswer,handleICECandidate,constructURI,getRelevantWSS,verifyClient,handleParticipantLeftCall}=require('./misc');
 const {wss}=require('./session-store');
 
 exports.handleUpgrade=(req,socket,head) => {
@@ -21,7 +21,7 @@ exports.handleUpgrade=(req,socket,head) => {
 
 exports.createWebSocketsServer=async () => {
 
-	const handleServerMessages=async (activeWSS) => {
+	const handleServerMessages=async (activeWSS,callID) => {
 		try {
 			activeWSS.on('connection',function(connection) {
 
@@ -74,6 +74,17 @@ exports.createWebSocketsServer=async () => {
 					}
 				});
 
+				// when connection closes
+				connection.on('close',function(connection) {
+
+					const data={
+						leavingUser: connection.email,
+						callID: callID
+					}
+
+					await handleParticipantLeftCall(data);
+				});
+
 			});
 		} catch (err) {
 			console.error("An error occurred:",err);
@@ -104,7 +115,7 @@ exports.createWebSocketsServer=async () => {
 
 		//console.log("the created activeWSS:",activeWSS);
 
-		await handleServerMessages(activeWSS);
+		await handleServerMessages(activeWSS,callID);
 
 		const uri=await constructURI(callID);
 		return {callID,uri};
