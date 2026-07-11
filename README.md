@@ -221,6 +221,11 @@ On Windows:
 ```bash
 npm run nuke:win
 ```
+
+### Alternative Setup: using localhost directly (no Ngrok)
+
+Instead of tunnelling through Ngrok (steps 2 and 5 above), you can run the app directly against `localhost` by setting `LOCAL=true` in your `.env`. This is quicker to get going but comes with major limitations — most notably you won't be able to reach the app from any device other than the machine running the containers. See [Using `LOCAL` instead of an Ngrok tunnel](#using-local-instead-of-an-ngrok-tunnel) in the Environment Variables section for full details before choosing this route.
+
 ---
 
 ## Signalling Server (Express.js API)
@@ -384,12 +389,30 @@ DB_NAME=dev-db
 DB_PASSWORD=testpassword123
 DB_HOST=mysql-db
 DB_PORT=3306
+NGROK_HOST=wss://<tunnel>.ngrok-free.dev
+LOCAL=false
 ```
 
 This should be defined in the root directory in order for both the Astro frontend and Express.js/WebSockets backend to access these variables.
-`NODE_ENV` can be set to either `dev` or `production`, setting `production` ensures refresh token cookie can only be sent over secure `HTTPS` connections (sets `Secure` property to `true`).
+`NODE_ENV` can be set to either `dev` or `production`.
 
 A `.env.example` file has been defined using these defaults for local testing. For production usage, ensure to set your own.
+
+#### Using `LOCAL` instead of an Ngrok tunnel
+
+`LOCAL` can be set to `true` or `false`, and is only consulted when `NODE_ENV` is `dev`. Setting `LOCAL=true` tells the frontend and signalling server that you're accessing everything directly via `localhost` rather than through an Ngrok tunnel, and switches over the CORS/WebSocket origin checks, Astro's allowed hosts, and the WebSocket upgrade path (`/ws/:callID` instead of `/wss/:callID`) accordingly.
+
+If you set `LOCAL=true`, you must leave `NGROK_HOST` with no value in your `.env` — having both set at once leads to the wrong host/allowed-origins configuration being used and will prevent correct deployment.
+
+Bear in mind that running this way restricts your ability to test with anything other than the machine you're developing on: the app will only be reachable at `http://localhost:4321`, so you won't be able to test from another device (e.g. a phone on the same network, or a remote peer) unless you expose your local server to your LAN or the wider internet by some other means. That isn't covered here, since this README only documents the Ngrok tunnel approach.
+
+#### Runtime changes when `NODE_ENV=production`
+
+- **Refresh Token CookieL:** Setting `production` ensures the refresh token cookie can only be sent over secure `HTTPS` connections (sets `Secure` property to `true`).
+- **CORS:** instead of restricting `Origin` to the `LOCAL`/`NGROK_HOST`-derived dev origins, the API allows any origin (`origin: '*'`) via a placeholder `ALLOWED_PROD_ORIGINS` list that still needs to be filled in with the deployed domain (`web-socket-api/src/app.js`).
+- **WebSocket server port:** each call's WebSocket server is bound to a randomly assigned port (via `setRandomPort()`) instead of the hardcoded dev port `3000` when `NODE_ENV` is `dev`
+- **WebSocket URL construction:** `constructURI` returns `wss://<NGROK_HOST>:<port>` using the server's actual assigned port, instead of the dev-mode `/wss/:callID` (or `/ws/:callID` when `LOCAL=true`) path (`web-socket-api/src/call/utils/misc.js`).
+- **WebSocket origin verification:** `verifyClient` rejects any WebSocket upgrade whose `Origin` header isn't in a hardcoded allowlist (currently a placeholder `https://app.example.com` that still needs updating for the real deployed domain) (`web-socket-api/src/call/utils/ws-server.js`).
 
 ---
 
