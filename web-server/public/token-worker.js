@@ -17,12 +17,19 @@ export class TokenService {
 
 const tokenService=new TokenService();
 let apiBase="";
+let includeNgrokWarningSkipHeader;
 
 function apiFetch(url,options={}) {
+
+	let ngrokWarningHeader;
+	if (includeNgrokWarningSkipHeader) {
+		ngrokWarningHeader={"ngrok-skip-browser-warning": "true"}
+	}
+
 	return fetch(url,{
 		...options,
 		headers: {
-			"ngrok-skip-browser-warning": "true",
+			...ngrokWarningHeader,
 			...options.headers,
 		}
 	});
@@ -34,7 +41,14 @@ onmessage=async function(event) {
 
 	switch (messageType) {
 		case 'Init':
-			apiBase=event.data.apiBase??`https://${self.location.hostname}`;
+
+			if (!this.self.location.hostname.startsWith("localhost")) {
+				apiBase=event.data.apiBase??`https://${self.location.hostname}`;
+				includeNgrokWarningSkipHeader=true;
+				return;
+			}
+
+			apiBase="http://localhost:3000";
 			break;
 		case 'ReqLogin':
 			const loginResult=await handleLogin(requestBody);

@@ -75,7 +75,8 @@ exports.verifyClient=(info) => {
 exports.constructURI=async (callID) => {
 
 	const isProd=process.env.NODE_ENV==='production';
-	const host=process.env.WS_HOST;
+	const host=process.env.NGROK_HOST;
+	const isLocal=process.env.LOCAL==='true';
 
 	if (isProd) {
 		const relevantWSS=await exports.getRelevantWSS(callID);
@@ -84,6 +85,10 @@ exports.constructURI=async (callID) => {
 		const port=addressInfo.port;
 
 		return `wss://${host}:${port}`;
+	}
+
+	if (!host&&isLocal) {
+		return `http://localhost:4321/ws/${callID}`;
 	}
 
 	return `${host}/wss/${callID}`;

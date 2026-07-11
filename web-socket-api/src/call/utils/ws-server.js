@@ -6,7 +6,15 @@ const {wss}=require('./session-store');
 exports.handleUpgrade=(req,socket,head) => {
 	console.log("connection upgrade in progress...");
 
-	const match=req.url.match(/^\/wss\/([\w-]+)$/);
+	const isLocal=process.env.LOCAL==='true';
+
+	let match;
+	if (!isLocal) {
+		match=req.url.match(/^\/wss\/([\w-]+)$/);
+	} else {
+		match=match=req.url.match(/^\/ws\/([\w-]+)$/);
+	}
+
 	if (!match) return socket.destroy();
 	const callID=match[1];
 	const entry=wss.find(s => callID in s);
@@ -82,7 +90,7 @@ exports.createWebSocketsServer=async () => {
 						callID: callID
 					}
 
-					await handleParticipantLeftCall(data);
+					handleParticipantLeftCall(data);
 				});
 
 			});

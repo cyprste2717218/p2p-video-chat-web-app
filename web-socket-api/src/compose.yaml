@@ -17,11 +17,12 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
       - NODE_ENV=${NODE_ENV}
+      - LOCAL=${LOCAL}
       - DB_NAME=${DB_NAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
-      - WS_HOST=${WS_HOST}
+      - NGROK_HOST=${NGROK_HOST}
       - WS_PORT_MIN=4000
       - WS_PORT_MAX=4099
     depends_on:

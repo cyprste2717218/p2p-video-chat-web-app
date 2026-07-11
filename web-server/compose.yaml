@@ -23,3 +23,5 @@ services:
           target: /app
     environment:
       - NODE_ENV=${NODE_ENV}
+      - NGROK_HOST=${NGROK_HOST}
+      - LOCAL=${LOCAL}
