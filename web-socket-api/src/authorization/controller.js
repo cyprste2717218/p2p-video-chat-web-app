@@ -110,14 +110,14 @@ export async function logout(request, response) {
 		const token = request.cookies?.refresh_token;
 		if (token) {
 			const tokenHash = hashToken(token);
-			const doc = await RefreshToken.findOne({tokenHash});
+			const doc = await RefreshToken.findOne({where: {tokenHash}});
 			if (doc && !doc.revokedAt) {
 				doc.revokedAt = new Date();
 				await doc.save();
 			}
 		}
 
-		response.clearCookie('refresh_token', {path: '/refresh'});
+		response.clearCookie('refresh_token', {path: '/auth'});
 		response.json({
 			success: true,
 			data: {message: 'Logged out succesfully'},
@@ -147,9 +147,9 @@ export async function refresh(request, response) {
 
 		const tokenHash = hashToken(token);
 		const doc = await RefreshToken.findOne({
-			tokenHash,
-			jti: decoded.jti,
-		}).populate('user');
+			where: {tokenHash, jti: decoded.jti},
+			include: [User],
+		});
 
 		if (!doc) {
 			return response
