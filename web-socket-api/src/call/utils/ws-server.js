@@ -116,7 +116,13 @@ exports.createWebSocketsServer=async () => {
 
 	try {
 
-		wss.push({[callID]: new WebSocketServer({noServer: true,perMessageDeflate: false,verifyClient: (info) => verifyClient(info),maxPayload: 64*1024})});
+		wss.push({
+			[callID]: {
+
+				server: new WebSocketServer({noServer: true,perMessageDeflate: false,verifyClient: (info) => verifyClient(info),maxPayload: 64*1024}),
+				
+			}
+		});
 		//console.log("these are the new Web Socket Server details:",wss);
 
 		const activeWSS=await getRelevantWSS(callID);
