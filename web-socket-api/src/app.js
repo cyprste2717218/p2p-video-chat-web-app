@@ -1,5 +1,6 @@
 import http from 'node:http';
 import process from 'node:process';
+import {fileURLToPath} from 'node:url';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import express from 'express';
@@ -50,14 +51,20 @@ server.on('upgrade', (request, socket, head) =>
 
 const HOST = '0.0.0.0';
 
-server.listen(3000, HOST, () => {
-	console.log(`Server running on http://${HOST}:3000`);
-});
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
 
-process.on('SIGTERM', () => {
-	server.close(() => {
-		sequelize.close().catch((error) => {
-			console.error('Error closing database connection:', error);
+if (isMainModule) {
+	server.listen(3000, HOST, () => {
+		console.log(`Server running on http://${HOST}:3000`);
+	});
+
+	process.on('SIGTERM', () => {
+		server.close(() => {
+			sequelize.close().catch((error) => {
+				console.error('Error closing database connection:', error);
+			});
 		});
 	});
-});
+}
+
+export {app, server};
