@@ -19,7 +19,8 @@ All commands below are run from the repo root unless noted.
 - `npm run nuke:win` / `npm run nuke:unix` — full teardown: removes containers/images/volumes/deps, then rebuilds/reinstalls. Destructive — only run when setup is broken.
 - `npm test` (root) — runs `xo` (lint) across the repo; this is the only root-level test/lint command.
 - `npx playwright test` — run e2e tests in `e2e/` (Playwright config at `playwright.config.ts`).
-
+- `npm run lint` —  Runs XO linting with prettier config passed in
+- `npm run lint:fix` — Applies XO linting and prettier formatting fixes where possible, identifies any errors/warnings that couldn't be implemented
 Per-workspace:
 - `web-socket-api/src`: `npm run dev` runs the API directly with `node --env-file=.env app.js` (outside Docker). No test runner is currently wired up (`npm test` is a placeholder); `tests/it` and `tests/unit` exist but are empty scaffolding.
 - `web-server`: `npm run dev` runs Astro directly (`astro dev`); `npm run build` / `npm run preview` for production builds. `tests/components` exists but is empty scaffolding. Vitest is a devDependency but no tests are written yet.
@@ -27,6 +28,22 @@ Per-workspace:
 A root `.env` (copied from `.env.example`) is required and is shared by both the frontend and backend containers — see the @README.md Environment Variables section for the full variable list (`JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `DB_*`, `NGROK_HOST`, `LOCAL`, `NODE_ENV`).
 
 Pre-commit hook (Husky) runs `lint-staged` (`xo --prettier` on staged `.js`/`.css`) and verifies the Astro frontend builds.
+
+## Git conventions
+
+Each commit message should be at most 30 characters in total and always start with one of the following prefixes depending on the changes made:
+
+- `chore:`
+
+For most changes which help implement code as part of an overarching feature, where it be source code or automated tests. The feature it is contributing to is ideally indicated by the name of the current branch (which should start with the `feat/` prefix).
+
+- `fix:`
+
+For any changes which implement a bug fix, which could have been identified during implementation of a feature or pulled from a GitHub issue.
+
+For either type of commit, the diff should be small and focused as far as this is possible and ideally not change more than 5 files at the same time or exceed a total of 200 changed lines of code.
+Each commit should pass the git hooks in the `pre-commit` and `pre-push` checks, however if in order to meet this diff standard these checks fail then the commit pre-fix must be followed by `(WIP):` before the colon, e.g. `chore(WIP):`
+
 
 ## Architecture
 
