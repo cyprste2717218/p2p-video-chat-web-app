@@ -61,7 +61,7 @@ export async function createCall(request, response) {
 			activeCall: false,
 		});
 
-		newCall.addUser(retrievedUser);
+		await newCall.addUser(retrievedUser);
 
 		response.status(201).json({success: true, data: {callID, callURL: uri}});
 	} catch (error) {
@@ -110,7 +110,7 @@ export async function joinCall(request, response) {
 		}
 
 		// Add pending participant (has to join WebSocket server) to in-memory config for current call
-		requestedCall.addUser(retrievedUser);
+		await requestedCall.addUser(retrievedUser);
 
 		// Retrieving the URL of the web socket server
 		const requestedCallURL = requestedCall.callURL;
@@ -213,6 +213,9 @@ export async function leaveCall(request, response) {
 	}
 }
 
-export async function sendMessage(_request, _response) {
+export async function sendMessage(_request, response) {
 	// Not yet implemented — see openapi.yaml (501 Not Implemented).
+	response
+		.status(501)
+		.json({success: false, data: {message: 'Not implemented'}});
 }
