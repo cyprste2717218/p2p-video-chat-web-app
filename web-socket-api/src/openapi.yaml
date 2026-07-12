@@ -1,65 +1,22 @@
-openapi: 3.2.0
+openapi: 3.0.3
 info:
-  title: Web Socket API
-  description: A simple API to manage a web socket connection
+  title: Voneo Signalling API
+  description: >
+    Signalling API for the Voneo peer-to-peer video chat app. Handles
+    authentication and call lifecycle (create/join/leave); actual media
+    is exchanged peer-to-peer over WebRTC once signalling completes. Each
+    call gets its own in-memory WebSocket server for SDP offer relay, chat,
+    and participant notifications — see the WebSocket protocol note at the
+    bottom of this document.
   version: 1.0.0
 servers:
   - url: http://localhost:3000
+    description: Local dev
 
 paths:
-  /user:
-    get:
-      summary: Get user details
-      operationId: getUser
-      responses:
-        '200':
-          description: A user
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/User'
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-       
-  /user/all:
-    get:
-      summary: Get all users details
-      operationId: getAllUsers
-      responses:
-        '200':
-          description: A list of users
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/User'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-    
-  /signup:
+  /auth/signup:
     post:
-      summary: Register a new user with username, email and password
+      summary: Register a new user
       operationId: signupUser
       requestBody:
         required: true
@@ -73,45 +30,36 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    success:
-                      type: boolean
-                    user:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                          format: int64
-                        username:
-                          type: string
-                        email:
-                          type: string
-                          format: email
-                    token:
-                      type: string
-                      format: jwt
+                $ref: '#/components/schemas/SuccessMessage'
         '400':
           description: Invalid input
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                  details:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        property:
-                          type: string
-                        message:
-                          type: string
+                $ref: '#/components/schemas/ValidationError'
         '500':
-          description: Internal server error
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+
+  /auth/login:
+    post:
+      summary: Log in with email and password
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: >
+            Login succeeded. An access token is returned in the response
+            body and a refresh token is set as an HttpOnly cookie
+            (`refresh_token`, scoped to `/refresh`).
           content:
             application/json:
               schema:
@@ -119,186 +67,334 @@ paths:
                 properties:
                   success:
                     type: boolean
-                  error:
-                    type: string
-                  reqBody:
-                    type: string
-  
-  /login:
-    post:
-      summary: Login an existing user with either user ID or email address alongside password
-      operationId: loginUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                em
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        format: jwt
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
 
+  /auth/logout:
+    post:
+      summary: Log out and revoke the current refresh token
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
       responses:
         '200':
-          description: JWT issued for succesful login
+          description: Logged out successfully. Clears the `refresh_token` cookie.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                    format: jwt
-        '400':
-          description: Invalid credentials for login attempt
+                $ref: '#/components/schemas/SuccessMessage'
+        '401':
+          description: Missing or invalid access token
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    username:
-                      type: string
-
+                $ref: '#/components/schemas/ErrorMessage'
         '500':
-          description: Server error during login request
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+
+  /auth/refresh:
+    post:
+      summary: Exchange a valid refresh token cookie for a new access token
+      operationId: refreshToken
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: New access token issued; refresh token is rotated.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                 data:
-                    username:
-                      type: string
-
-  /logout:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                        format: jwt
+        '401':
+          description: No, invalid, expired, or revoked refresh token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
 
   /call/create:
     post:
-      summary: Create a ws server for a new call and return the created call ID in UUID v4 format
+      summary: Create a new call
+      description: >
+        Spins up a dedicated in-memory WebSocket server for the call and
+        registers the requesting user as its first participant.
       operationId: createCall
-      requestBody:
-        required: true
-        content: 
-          application/json:
-            schema:
-                type: object
-                properties:
-                  username:
-                    type: string
-                  token:
-                    type: string
-                    format: jwt
-      responses: 
+      security:
+        - bearerAuth: []
+      responses:
         '201':
-          description: The ID of the new call
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                      success: 
-                        type: boolean
-                      callId:
-                        type: string
-                        format: uuid
-
-        '500':
-          description: Server error during creation of ws server for new call
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                        success: 
-                          type: boolean
-                        error:
-                          type: string
-
-        '429':
-          description: Concurrent video call sessions limit reached
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                        success: 
-                          type: boolean
-                        error:
-                          type: string
-
-  /call/join/{callId}:
-    put:
-      summary: Makes user join existing call
-      operationId: joinCall
-      requestBody:
-          required: true
-          content: 
+          description: Call created
+          content:
             application/json:
               schema:
-                  type: object
-                  properties:
-                    username:
-                      type: string
-                    token:
-                      type: string
-                      format: jwt
-      responses:
-    
-  /call/leave/{callId}:
-    put:
-      summary: Makes user disconnect from existing call
-      operationId: leaveCall
-      requestBody:
-        required: true
-        content: 
-          application/json:
-            schema:
                 type: object
                 properties:
-                  token:
-                    type: string
-                    format: jwt
-      
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      callID:
+                        type: string
+                        format: uuid
+                      callURL:
+                        type: string
+                        description: WebSocket URL for the call's signalling server
+        '500':
+          description: Server error during call/WebSocket server creation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+
+  /call/{callID}/join:
+    put:
+      summary: Join an existing call
+      operationId: joinCall
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/callID'
       responses:
+        '201':
+          description: Joined successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      callURL:
+                        type: string
+                        description: WebSocket URL for the call's signalling server
+        '400':
+          description: Invalid call ID, or call has already ended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: Call ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
 
-schemas:
+  /call/{callID}/leave:
+    delete:
+      summary: Leave an active call
+      description: >
+        Removes the requesting user as a participant. If they are the last
+        active participant, the call is marked finished and its WebSocket
+        server is shut down.
+      operationId: leaveCall
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/callID'
+      responses:
+        '200':
+          description: Left the call successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          description: Invalid call ID, or call is not active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '403':
+          description: Call has finished or requesting user is not an active participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: Call ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
 
-  SignUpRequest:
-    type: object
-    properties:
-      username:
-        type: string
-      email:
-        type: string
-        format: email
-      password:
-        type: string
-        format: password
+  /call/{callID}/messages:
+    post:
+      summary: Send a chat message on a call
+      description: >
+        **Not yet implemented** — the route is registered and auth-gated
+        but the handler currently returns no response. Do not rely on
+        this endpoint; use the WebSocket `chatMessage` event instead (see
+        the note below).
+      operationId: sendMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/callID'
+      responses:
+        '501':
+          description: Not implemented
 
-  User:
-    type: object
-    properties:
-      id:
-        type: integer
-        format: int64
-      username:
-        type: string
-      email:
-        type: string
-        format: email
-      password:
-        type: string
-        format: password
-      createdAt:
-        type: string
-        format: date-time
-      updatedAt:
-        type: string
-        format: date-time
-  
 components:
+  parameters:
+    callID:
+      name: callID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    SignUpRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 6
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    User:
+      type: object
+      description: Primary key is `email`; there is no separate numeric ID.
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+
+    SuccessMessage:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+
+    ErrorMessage:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            error:
+              type: string
+
+    ValidationError:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: >
+        Access token, either as an `Authorization: Bearer <token>` header
+        or an `access_token` cookie. `/auth/logout` and `/auth/refresh`
+        additionally require the `refresh_token` HttpOnly cookie set at
+        login.
+
+# WebSocket protocol (per-call server, not covered by the schema above):
+# Each call gets a dedicated WebSocket server at the URL returned from
+# /call/create or /call/{callID}/join.
+#
+# Client -> server messages:
+#   - newParticipantOnCall
+#   - chatMessage
+#   - offer (relayed to a named recipient for WebRTC SDP exchange)
+#
+# Server -> client messages:
+#   - receivedNewParticipantNotif
+#   - responseCurrentCallParticipants
+#   - offer
+#   - chatMessage / receivedNewChatMessage
