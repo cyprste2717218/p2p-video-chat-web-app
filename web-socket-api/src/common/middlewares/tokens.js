@@ -46,10 +46,6 @@ function setRefreshCookie(response, refreshToken) {
 		httpOnly: true,
 		secure: isProd,
 		sameSite: 'strict',
-		// Scoped to /auth so the cookie is actually sent to both endpoints
-		// that need it: /auth/logout and /auth/refresh (a Path of '/refresh'
-		// matches neither, since cookie Path is a literal path-segment
-		// prefix, not a suffix/route-name match).
 		path: '/auth',
 		maxAge: REFRESH_TTL_SEC * 1000,
 	});
