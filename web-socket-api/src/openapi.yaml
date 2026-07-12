@@ -59,7 +59,7 @@ paths:
           description: >
             Login succeeded. An access token is returned in the response
             body and a refresh token is set as an HttpOnly cookie
-            (`refresh_token`, scoped to `/refresh`).
+            (`refresh_token`, scoped to `/auth`).
           content:
             application/json:
               schema:
