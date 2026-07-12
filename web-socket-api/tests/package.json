@@ -1,0 +1,9 @@
+{
+  "name": "video-chat-web-socket-api-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "supertest": "^7.2.2"
+  }
+}
