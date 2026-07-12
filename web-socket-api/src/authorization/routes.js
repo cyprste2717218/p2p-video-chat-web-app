@@ -1,10 +1,12 @@
-const router = require('express').Router();
-const AuthController = require('./controller');
-const { check } = require('../common/middlewares/IsAuthenticated');
+import {Router} from 'express';
+import {check} from '../common/middlewares/is-authenticated.js';
+import * as AuthController from './controller.js';
+
+const router = new Router();
 
 router.post('/signup', AuthController.register);
 router.post('/login', AuthController.login);
 router.post('/logout', check, AuthController.logout);
 router.post('/refresh', check, AuthController.refresh);
 
-module.exports = router;
+export default router;

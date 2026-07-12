@@ -1,429 +1,428 @@
-const {wss}=require('./session-store');
-const {CallParticipants,Call,Op}=require('../../common/models');
+import process from 'node:process';
+import {CallParticipants, Call, Op} from '../../common/models/index.js';
+import {wss} from './session-store.js';
 
-
-exports.getRelevantWSS=async (callID) => {
-
+export async function getRelevantWSS(callID) {
 	try {
-		console.log("trying to find wss for:",callID);
-		const foundWss=wss.find(wsServer => callID in wsServer);
-		const activeWSS=foundWss? foundWss[callID]:null;
+		console.log('trying to find wss for:', callID);
+		const foundWss = wss.find((wsServer) => callID in wsServer);
+		const activeWSS = foundWss ? foundWss[callID] : null;
 
 		if (!activeWSS) {
-			throw new Error("No wss object found for callID");
+			throw new Error('No wss object found for callID');
 		}
-		console.log(`found a wss object for the call with ID ${callID}!`)
+
+		console.log(`found a wss object for the call with ID ${callID}!`);
 		return activeWSS;
-	}
-	catch (err) {
-		console.error("Error retrieving requested wss object:",err);
+	} catch (error) {
+		console.error('Error retrieving requested wss object:', error);
 	}
 }
 
-exports.participantNotOnCall=async (callID,email) => {
-
+export async function participantNotOnCall(callID, email) {
 	try {
-		const participant=await CallParticipants.findOne({
+		const participant = await CallParticipants.findOne({
 			where: {
 				CallCallID: callID,
 				UserEmail: email,
-			}
+			},
 		});
 
 		if (participant) {
 			return;
 		}
 
-
-		const errorMessage=
-		{
+		const errorMessage = {
 			type: 'error',
 			data: {
-				message: "Message validation error"
-			}
+				message: 'Message validation error',
+			},
 		};
 
 		return errorMessage;
-
-	} catch (err) {
-		throw new Error("Error checking participant is on call:",err);
+	} catch (error) {
+		throw new Error('Error checking participant is on call', {cause: error});
 	}
-
 }
 
-exports.verifyClient=(info) => {
-
+export function verifyClient(info) {
 	try {
-
-		const isProd=process.env.NODE_ENV==="production";
+		const isProd = process.env.NODE_ENV === 'production';
 		if (isProd) {
-			const allowedOrigins=['https://app.example.com']; //update this to gcp domain used
+			const allowedOrigins = ['https://app.example.com']; // Update this to gcp domain used
 			if (!allowedOrigins.includes(info.origin)) {
 				console.log(`Rejected unauthorized origin: ${info.origin}`);
 				return false;
 			}
+
 			return true;
 		}
+
 		return true;
-	} catch (err) {
-		throw new Error("Error occured verifying Origin header on Websocket connection handshake:",err);
+	} catch (error) {
+		throw new Error(
+			'Error occured verifying Origin header on Websocket connection handshake',
+			{cause: error},
+		);
 	}
-
-
 }
 
-exports.constructURI=async (callID) => {
-
-	const isProd=process.env.NODE_ENV==='production';
-	const host=process.env.NGROK_HOST;
-	const isLocal=process.env.LOCAL==='true';
+export async function constructURI(callID) {
+	const isProd = process.env.NODE_ENV === 'production';
+	const host = process.env.NGROK_HOST;
+	const isLocal = process.env.LOCAL === 'true';
 
 	if (isProd) {
-		const relevantWSS=await exports.getRelevantWSS(callID);
+		const relevantWSS = await getRelevantWSS(callID);
 
-		const addressInfo=relevantWSS.address();
-		const port=addressInfo.port;
+		const addressInfo = relevantWSS.address();
+		const {port} = addressInfo;
 
 		return `wss://${host}:${port}`;
 	}
 
-	if (!host&&isLocal) {
+	if (!host && isLocal) {
 		return `http://localhost:4321/ws/${callID}`;
 	}
 
 	return `${host}/wss/${callID}`;
 }
 
-exports.sendMsgToAllParticipants=async (message,callID) => {
+export async function sendMessageToAllParticipants(message, callID) {
 	try {
-		console.log("broadcasting message");
+		console.log('broadcasting message');
 
-		//console.log("this is the current wss:",wss);
-
-		// get correct wss server to send messages to joined participants on
-		const activeWSS=await exports.getRelevantWSS(callID);
-
+		// Get correct wss server to send messages to joined participants on
+		const activeWSS = await getRelevantWSS(callID);
 
 		if (activeWSS.clients) {
-
-			activeWSS.clients.forEach(async (client) => {
+			for (const client of activeWSS.clients) {
 				// Check if the connection is fully open
-				if (client.readyState===1) {
-					await client.send(JSON.stringify(message));
-				}
-			});
+				// eslint-disable-next-line no-await-in-loop -- must send to each client in turn
+				if (client.readyState === 1) await client.send(JSON.stringify(message));
+			}
 		}
-	} catch (err) {
-		console.error(`Error during message broadcast for callID: ${callID}: ${err}`)
+	} catch (error) {
+		console.error(
+			`Error during message broadcast for callID: ${callID}: ${error}`,
+		);
 	}
-
-
 }
 
-exports.sendMessageToParticipant=async (targetParticipant,message,callID) => {
-
+export async function sendMessageToParticipant(
+	targetParticipant,
+	message,
+	callID,
+) {
 	try {
-
-		// get correct wss server to send messages to joined participants on
-		const activeWSS=await exports.getRelevantWSS(callID);
+		// Get correct wss server to send messages to joined participants on
+		const activeWSS = await getRelevantWSS(callID);
 
 		if (activeWSS.clients) {
-			//console.log("these are the activeWSS clients:",activeWSS.clients);
+			const participant = [...activeWSS.clients].find(
+				(client) => client.email === targetParticipant,
+			);
 
-
-			const participant=[...activeWSS.clients].find(client => client.email===targetParticipant);
-
-			if (!(participant&&participant.readyState===1)) {
-				throw new Error("Unable to find participant or participant ws connection not open");
+			if (!(participant && participant.readyState === 1)) {
+				throw new Error(
+					'Unable to find participant or participant ws connection not open',
+				);
 			}
-			console.log("Found participant to send msg to:",participant.email);
+
+			console.log('Found participant to send msg to:', participant.email);
 			participant.send(JSON.stringify(message));
 		}
-
-
-
-	} catch (err) {
-		console.error("Error occurred sending message to websocket client:",err);
+	} catch (error) {
+		console.error('Error occurred sending message to websocket client:', error);
 	}
-
-
 }
 
-exports.handleNewCallParticipantMsg=async (data) => {
-
+export async function handleNewCallParticipantMessage(data) {
 	try {
-		const {username,email,callID}=data;
-		console.log("New Participant joined:",username,email,callID);
+		const {username, email, callID} = data;
+		console.log('New Participant joined:', username, email, callID);
 		console.log(`User ${email} connected to WebSocket server`);
-		const newParticipantNotif=
-		{
+		const newParticipantNotif = {
 			type: 'receivedNewParticipantNotif',
-			data: {message: `${email} joined chat`,email: email}
+			data: {message: `${email} joined chat`, email},
 		};
 
-		console.log("About to call broadcast...");
-		await exports.sendMsgToAllParticipants(newParticipantNotif,callID);
+		console.log('About to call broadcast...');
+		await sendMessageToAllParticipants(newParticipantNotif, callID);
 
 		// Update status of user from 'pending' to 'active' on the call
-		console.log("this is the callID:",callID);
-		const currentCallParticipant=await CallParticipants.findOne({
+		console.log('this is the callID:', callID);
+		const currentCallParticipant = await CallParticipants.findOne({
 			where: {
 				CallCallID: callID,
 				UserEmail: email,
-			}
+			},
 		});
 
 		await currentCallParticipant.update({
-			status: 'active'
+			status: 'active',
 		});
 
-
 		// Returning names of current call participants to new participant to establish connections
-		const activeUsers=await CallParticipants.findAll({
+		const activeUsers = await CallParticipants.findAll({
 			where: {
 				CallCallID: callID,
 				status: 'active',
 				userEmail: {
-					[Op.ne]: email
-				}
+					[Op.ne]: email,
+				},
 			},
-			raw: true
+			raw: true,
 		});
 
+		if (activeUsers.length > 0) {
+			console.log('activeUsers are:', activeUsers[0]);
+			const otherCallParticipants = activeUsers.map((user) => user.userEmail);
 
-		if (activeUsers.length>0) {
-
-			console.log("activeUsers are:",activeUsers[0]);
-			const otherCallParticipants=activeUsers.map(user => user.userEmail);
-
-			const currentCallParticipantsMsg=JSON.stringify(
-				{
-					type: 'responseCurrentCallParticipants',
-					data: {participants: otherCallParticipants,callID: callID,currentUserEmail: email}
-				}
-			)
-
-			return currentCallParticipantsMsg;
-		}
-
-		return JSON.stringify(
-			{
+			const currentCallParticipantsMessage = JSON.stringify({
 				type: 'responseCurrentCallParticipants',
-				data: {participants: [],callID: callID,currentUserEmail: email}
-			}
-		)
+				data: {
+					participants: otherCallParticipants,
+					callID,
+					currentUserEmail: email,
+				},
+			});
 
-	} catch (err) {
-		console.error(`An error occured when responding to msg of new call participant joining call ${data.callID}: ${err}`,);
-		return;
-	}
-
-
-
-
-}
-
-exports.handleNewParticipantOnCall=async (data,connection) => {
-
-	try {
-		// setting new email property on connection (websocket client) object directly for targeting specific messages
-		connection.email=data.email;
-
-		// getting return object to send to client
-		const currentCallParticipantsMsg=await exports.handleNewCallParticipantMsg(data);
-		connection.send(currentCallParticipantsMsg);
-	} catch (err) {
-		console.error("An error occured forwarding new participant type message:",err);
-	}
-
-}
-
-exports.handleChatMessage=async (data) => {
-
-	try {
-		const {email,message,callID}=data;
-
-		const participantNotOnCallRes=await exports.participantNotOnCall(callID,email);
-
-		if (participantNotOnCallRes) {
-			return exports.sendMessageToParticipant(email,participantNotOnCallRes,callID);
+			return currentCallParticipantsMessage;
 		}
 
-		const newChatMessage=
-		{
+		return JSON.stringify({
+			type: 'responseCurrentCallParticipants',
+			data: {participants: [], callID, currentUserEmail: email},
+		});
+	} catch (error) {
+		console.error(
+			`An error occured when responding to msg of new call participant joining call ${data.callID}: ${error}`,
+		);
+	}
+}
+
+export async function handleNewParticipantOnCall(data, connection) {
+	try {
+		// Setting new email property on connection (websocket client) object directly for targeting specific messages
+		connection.email = data.email;
+
+		// Getting return object to send to client
+		const currentCallParticipantsMessage =
+			await handleNewCallParticipantMessage(data);
+		connection.send(currentCallParticipantsMessage);
+	} catch (error) {
+		console.error(
+			'An error occured forwarding new participant type message:',
+			error,
+		);
+	}
+}
+
+export async function handleChatMessage(data) {
+	try {
+		const {email, message, callID} = data;
+
+		const participantNotOnCallResult = await participantNotOnCall(
+			callID,
+			email,
+		);
+
+		if (participantNotOnCallResult) {
+			return sendMessageToParticipant(
+				email,
+				participantNotOnCallResult,
+				callID,
+			);
+		}
+
+		const newChatMessage = {
 			type: 'chatMessage',
 			data: {
-				message: message,
-				email: email,
-			}
+				message,
+				email,
+			},
 		};
 
-		await exports.sendMsgToAllParticipants(newChatMessage,callID);
-	} catch (err) {
-		console.error("Error occured forwarding chat message:",err);
+		await sendMessageToAllParticipants(newChatMessage, callID);
+	} catch (error) {
+		console.error('Error occured forwarding chat message:', error);
 	}
-
 }
 
-exports.handleICECandidate=async (data) => {
-
+export async function handleICECandidate(data) {
 	try {
-		const {caller,recipient,candidate,callID}=data;
+		const {caller, recipient, candidate, callID} = data;
 		console.log(`User ${caller} sent ICE candidate to ${recipient}`);
 
-		const participantNotOnCallRes=await exports.participantNotOnCall(callID,caller);
+		const participantNotOnCallResult = await participantNotOnCall(
+			callID,
+			caller,
+		);
 
-		if (participantNotOnCallRes) {
-			return exports.sendMessageToParticipant(caller,participantNotOnCallRes,callID);
+		if (participantNotOnCallResult) {
+			return sendMessageToParticipant(
+				caller,
+				participantNotOnCallResult,
+				callID,
+			);
 		}
 
-
-		// prepare message format to return to intended recipient
-		const iceCandidateForReceipient={
+		// Prepare message format to return to intended recipient
+		const iceCandidateForReceipient = {
 			type: 'candidate',
 			data: {
-				caller: caller,
-				recipient: recipient,
-				candidate: candidate,
-				callID: callID
-			}
-		}
-
-		exports.sendMessageToParticipant(recipient,iceCandidateForReceipient,callID);
-	} catch (err) {
-		console.error("Error occured forwarding ICE candidate message:",err);
-	}
-
-
-}
-
-exports.handleOffer=async (data) => {
-
-	try {
-		const {offer,recipient,caller,callID}=data;
-		console.log(`User ${caller} sent offer to ${recipient}: ${offer} on call ${callID}`);
-
-		const participantNotOnCallRes=await exports.participantNotOnCall(callID,caller);
-
-		if (participantNotOnCallRes) {
-			return exports.sendMessageToParticipant(caller,participantNotOnCallRes,callID);
-		}
-
-		// prepare message format to return to intended recipient
-		const offerMessageToReceipient={
-			type: 'offer',
-			data: {
-				caller: caller,
-				recipient: recipient,
-				offer: offer,
-				callID: callID
-			}
-		}
-
-		exports.sendMessageToParticipant(recipient,offerMessageToReceipient,callID);
-	} catch (err) {
-		console.error("Error occured forwarding offer message:",err);
-	}
-
-}
-
-exports.handleAnswer=async (data) => {
-
-	try {
-		const {caller,recipient,answer,callID}=data;
-		console.log(`User ${recipient} sent answer to ${caller}`);
-
-		const participantNotOnCallRes=await exports.participantNotOnCall(callID,caller);
-
-		if (participantNotOnCallRes) {
-			return exports.sendMessageToParticipant(caller,participantNotOnCallRes,callID);
-		}
-
-		// prepare message format to return to intended recipient
-		const answerMessageToCaller={
-			type: 'answer',
-			data: {
-				caller: caller,
-				recipient: recipient,
-				answer: answer,
-				callID: callID
-			}
-		}
-		exports.sendMessageToParticipant(caller,answerMessageToCaller,callID);
-
-	} catch (err) {
-		console.error("Error occured handling forwarding of answer:",err);
-	}
-
-}
-
-exports.handleParticipantLeftCall=async (data) => {
-
-
-	try {
-		const {leavingUser,callID}=data;
-		const message=`${leavingUser} left the call`;
-
-		const participantNotOnCallRes=await exports.participantNotOnCall(callID,leavingUser);
-
-		if (participantNotOnCallRes) {
-			return exports.sendMessageToParticipant(leavingUser,participantNotOnCallRes,callID);
-		}
-
-		const newParticipantLeavingMessage=
-		{
-			type: 'participantLeftCall',
-			data: {
-				message: message,
-				email: leavingUser,
-			}
+				caller,
+				recipient,
+				candidate,
+				callID,
+			},
 		};
 
-		await exports.sendMsgToAllParticipants(newParticipantLeavingMessage,callID);
-
-
-	} catch (err) {
-		console.error("Error occured handling forwarding of answer:",err);
+		sendMessageToParticipant(recipient, iceCandidateForReceipient, callID);
+	} catch (error) {
+		console.error('Error occured forwarding ICE candidate message:', error);
 	}
 }
 
-exports.setRandomPort=async () => {
-	function generateRandomPort() {
-		const WS_PORT_MIN=Number(process.env.WS_PORT_MIN)||4000;
-		const WS_PORT_MAX=Number(process.env.WS_PORT_MAX)||4099;
-		return Math.floor(WS_PORT_MIN+Math.random()*(WS_PORT_MAX-WS_PORT_MIN+1));
+export async function handleOffer(data) {
+	try {
+		const {offer, recipient, caller, callID} = data;
+		console.log(
+			`User ${caller} sent offer to ${recipient}: ${offer} on call ${callID}`,
+		);
+
+		const participantNotOnCallResult = await participantNotOnCall(
+			callID,
+			caller,
+		);
+
+		if (participantNotOnCallResult) {
+			return sendMessageToParticipant(
+				caller,
+				participantNotOnCallResult,
+				callID,
+			);
+		}
+
+		// Prepare message format to return to intended recipient
+		const offerMessageToReceipient = {
+			type: 'offer',
+			data: {
+				caller,
+				recipient,
+				offer,
+				callID,
+			},
+		};
+
+		sendMessageToParticipant(recipient, offerMessageToReceipient, callID);
+	} catch (error) {
+		console.error('Error occured forwarding offer message:', error);
 	}
-	const isProd=process.env.NODE_ENV==="production";
+}
+
+export async function handleAnswer(data) {
+	try {
+		const {caller, recipient, answer, callID} = data;
+		console.log(`User ${recipient} sent answer to ${caller}`);
+
+		const participantNotOnCallResult = await participantNotOnCall(
+			callID,
+			caller,
+		);
+
+		if (participantNotOnCallResult) {
+			return sendMessageToParticipant(
+				caller,
+				participantNotOnCallResult,
+				callID,
+			);
+		}
+
+		// Prepare message format to return to intended recipient
+		const answerMessageToCaller = {
+			type: 'answer',
+			data: {
+				caller,
+				recipient,
+				answer,
+				callID,
+			},
+		};
+		sendMessageToParticipant(caller, answerMessageToCaller, callID);
+	} catch (error) {
+		console.error('Error occured handling forwarding of answer:', error);
+	}
+}
+
+export async function handleParticipantLeftCall(data) {
+	try {
+		const {leavingUser, callID} = data;
+		const message = `${leavingUser} left the call`;
+
+		const participantNotOnCallResult = await participantNotOnCall(
+			callID,
+			leavingUser,
+		);
+
+		if (participantNotOnCallResult) {
+			return sendMessageToParticipant(
+				leavingUser,
+				participantNotOnCallResult,
+				callID,
+			);
+		}
+
+		const newParticipantLeavingMessage = {
+			type: 'participantLeftCall',
+			data: {
+				message,
+				email: leavingUser,
+			},
+		};
+
+		await sendMessageToAllParticipants(newParticipantLeavingMessage, callID);
+	} catch (error) {
+		console.error('Error occured handling forwarding of answer:', error);
+	}
+}
+
+export async function setRandomPort() {
+	function generateRandomPort() {
+		const WS_PORT_MIN = Number(process.env.WS_PORT_MIN) || 4000;
+		const WS_PORT_MAX = Number(process.env.WS_PORT_MAX) || 4099;
+		return Math.floor(
+			WS_PORT_MIN + Math.random() * (WS_PORT_MAX - WS_PORT_MIN + 1),
+		);
+	}
+
+	const isProd = process.env.NODE_ENV === 'production';
 
 	let randomPort;
 	try {
-		// checking new port does not conflict with existing WS server
-		const generatedPort=generateRandomPort();
-		const targetWSUrl=`wss://localhost:${generatedPort}`
+		// Checking new port does not conflict with existing WS server
+		const generatedPort = generateRandomPort();
+		const targetWSUrl = `wss://localhost:${generatedPort}`;
 
-
-		const isURLTaken=await Call.findOne({
+		const isURLTaken = await Call.findOne({
 			where: {
-				callURL: targetWSUrl
-			}
+				callURL: targetWSUrl,
+			},
 		});
 
-		if (isURLTaken||(!isProd&&generatedPort==4321)) {
-			throw new Error("Generated port number already in use");
+		if (isURLTaken || (!isProd && generatedPort === 4321)) {
+			throw new Error('Generated port number already in use');
 		}
 
-		randomPort=generatedPort;
-
-	} catch (err) {
-		if (err!=="Generated port number already in use") {
-			throw new Error(err);
+		randomPort = generatedPort;
+	} catch (error) {
+		if (error.message !== 'Generated port number already in use') {
+			throw error;
 		}
 
-		const portNum=exports.setRandomPort();
-		randomPort=portNum;
-
+		randomPort = await setRandomPort();
 	}
 
 	return randomPort;
-
 }

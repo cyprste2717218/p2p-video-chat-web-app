@@ -1,10 +1,12 @@
-const router = require('express').Router();
-const CallController = require('./controller');
-const { check } = require('../common/middlewares/IsAuthenticated');
+import {Router} from 'express';
+import {check} from '../common/middlewares/is-authenticated.js';
+import * as CallController from './controller.js';
+
+const router = new Router();
 
 router.post('/create', check, CallController.createCall);
 router.put('/:callID/join', check, CallController.joinCall);
 router.delete('/:callID/leave', check, CallController.leaveCall);
 router.post('/:callID/messages', check, CallController.sendMessage);
 
-module.exports = router;
+export default router;

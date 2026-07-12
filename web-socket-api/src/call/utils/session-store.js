@@ -1,2 +1,1 @@
-const wss=[];
-exports.wss=wss;
+export const wss = [];

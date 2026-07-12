@@ -1,170 +1,173 @@
-var WebSocketServer=require('ws').Server;
-const uuid=require('uuid');
-const {handleNewParticipantOnCall,handleChatMessage,handleOffer,handleAnswer,handleICECandidate,constructURI,getRelevantWSS,verifyClient,handleParticipantLeftCall}=require('./misc');
-const {wss}=require('./session-store');
+import process from 'node:process';
+import WebSocket, {WebSocketServer} from 'ws';
+import {v4 as uuidv4} from 'uuid';
+import {
+	handleNewParticipantOnCall,
+	handleChatMessage,
+	handleOffer,
+	handleAnswer,
+	handleICECandidate,
+	constructURI,
+	getRelevantWSS,
+	verifyClient,
+	handleParticipantLeftCall,
+	setRandomPort,
+} from './misc.js';
+import {wss} from './session-store.js';
 
-exports.handleUpgrade=(req,socket,head) => {
-	console.log("connection upgrade in progress...");
+export function handleUpgrade(request, socket, head) {
+	console.log('connection upgrade in progress...');
 
-	const isLocal=process.env.LOCAL==='true';
+	const isLocal = process.env.LOCAL === 'true';
 
-	let match;
-	if (!isLocal) {
-		match=req.url.match(/^\/wss\/([\w-]+)$/);
-	} else {
-		match=match=req.url.match(/^\/ws\/([\w-]+)$/);
-	}
+	const match = isLocal
+		? request.url.match(/^\/ws\/([\w\-]+)$/v)
+		: request.url.match(/^\/wss\/([\w\-]+)$/v);
 
 	if (!match) return socket.destroy();
-	const callID=match[1];
-	const entry=wss.find(s => callID in s);
+	const callID = match[1];
+	const entry = wss.find((s) => callID in s);
 	if (!entry) return socket.destroy();
-	entry[callID].handleUpgrade(req,socket,head,(ws) => {
-		entry[callID].emit('connection',ws,req);
+	entry[callID].server.handleUpgrade(request, socket, head, (ws) => {
+		entry[callID].server.emit('connection', ws, request);
 	});
 
-	console.log("connection upgrade finished");
-};
+	console.log('connection upgrade finished');
+}
 
-
-exports.createWebSocketsServer=async () => {
-
-	const handleServerMessages=async (activeWSS,callID) => {
+export async function createWebSocketsServer() {
+	const handleServerMessages = async (activeWSS, callID) => {
 		try {
-			activeWSS.on('connection',function(connection) {
-
-				//when server gets a message from a connected user 
-				connection.on('message',async function(message) {
-
-					let parsedMessage,type,data;
+			activeWSS.on('connection', function (connection) {
+				// When server gets a message from a connected user
+				connection.on('message', async function (message) {
+					let parsedMessage;
+					let type;
+					let data;
 
 					try {
-						parsedMessage=JSON.parse(message);
-						console.log("this is the parsedMessage:",parsedMessage);
-					} catch (err) {
+						parsedMessage = JSON.parse(message);
+						console.log('this is the parsedMessage:', parsedMessage);
+					} catch {
 						console.error("Couldn't parse message from stringified JSON");
 					}
 
-					if (!parsedMessage) {
-						type="unnaccepted message type";
+					if (parsedMessage) {
+						type = parsedMessage.type;
+						data = parsedMessage.data;
 					} else {
-						type=parsedMessage.type;
-						data=parsedMessage.data;
+						type = 'unnaccepted message type';
 					}
 
-					//console.log("this is the data:",data);
-
 					switch (type) {
-						case 'newParticipantOnCall':
-							handleNewParticipantOnCall(data,connection)
+						case 'newParticipantOnCall': {
+							handleNewParticipantOnCall(data, connection);
 
 							break;
-						case 'chatMessage':
+						}
+
+						case 'chatMessage': {
 							handleChatMessage(data);
 
 							break;
-						case 'offer':
+						}
 
+						case 'offer': {
 							handleOffer(data);
 							break;
-						case 'candidate':
+						}
 
+						case 'candidate': {
 							handleICECandidate(data);
 							break;
-						case 'answer':
+						}
 
+						case 'answer': {
 							handleAnswer(data);
 							break;
-						default:
-							console.log("message of unrecognised type sent:",type);
+						}
 
-
+						default: {
+							console.log('message of unrecognised type sent:', type);
+						}
 					}
 				});
 
-				// when connection closes
-				connection.on('close',function(connection) {
-
-					const data={
+				// When connection closes
+				connection.on('close', function (connection) {
+					const data = {
 						leavingUser: connection.email,
-						callID: callID
-					}
+						callID,
+					};
 
 					handleParticipantLeftCall(data);
 				});
-
 			});
-		} catch (err) {
-			console.error("An error occurred:",err);
-			throw err;
+		} catch (error) {
+			console.error('An error occurred:', error);
+			throw error;
 		}
+	};
 
+	const isProd = process.env.NODE_ENV === 'production';
 
-	}
+	const callID = uuidv4();
 
-	const isProd=process.env.NODE_ENV==='production';
-
-	const callID=uuid.v4();
-
-	let portNum=3000; // hardcoded port if in dev mode (NODE_ENV = 'dev')
-
-	if (isProd) {
-		//creating a websocket server at random port 
-		portNum=await setRandomPort();
-	}
-
+	// Hardcoded port if in dev mode (NODE_ENV = 'dev'); random port in production
+	const portNumber = isProd ? await setRandomPort() : 3000;
 
 	try {
+		const wsServerOptions = isProd
+			? {
+					port: portNumber,
+					perMessageDeflate: false,
+					verifyClient: (info) => verifyClient(info),
+					maxPayload: 64 * 1024,
+				}
+			: {
+					noServer: true,
+					perMessageDeflate: false,
+					verifyClient: (info) => verifyClient(info),
+					maxPayload: 64 * 1024,
+				};
 
 		wss.push({
 			[callID]: {
-
-				server: new WebSocketServer({noServer: true,perMessageDeflate: false,verifyClient: (info) => verifyClient(info),maxPayload: 64*1024}),
-				
-			}
+				server: new WebSocketServer(wsServerOptions),
+			},
 		});
-		//console.log("these are the new Web Socket Server details:",wss);
 
-		const activeWSS=await getRelevantWSS(callID);
+		const activeWSS = await getRelevantWSS(callID);
 
-		//console.log("the created activeWSS:",activeWSS);
+		await handleServerMessages(activeWSS.server, callID);
 
-		await handleServerMessages(activeWSS,callID);
-
-		const uri=await constructURI(callID);
-		return {callID,uri};
-
-	} catch (err) {
-		console.error("This is the error:",err);
-		throw new Error("Error creating WebSockets Server:",err);
+		const uri = await constructURI(callID);
+		return {callID, uri};
+	} catch (error) {
+		console.error('This is the error:', error);
+		throw new Error('Error creating WebSockets Server', {cause: error});
 	}
-
-
-
 }
 
-exports.shutDownServer=async (callID) => {
+export async function shutDownServer(callID) {
 	console.log('Shutting down WebSocket server...');
 
 	try {
-		const activeWSS=await getRelevantWSS(callID);
+		const activeWSS = await getRelevantWSS(callID);
 
-		activeWSS.clients.forEach((client) => {
-			if (client.readyState===WebSocket.OPEN) {
-				client.close(1001,"Server is shutting down");
+		for (const client of activeWSS.clients) {
+			if (client.readyState === WebSocket.OPEN) {
+				client.close(1001, 'Server is shutting down');
 			}
-		});
+		}
 
 		activeWSS.close(() => {
 			console.log('WebSocket server is completely stopped.');
 		});
 
 		return true;
-
-	} catch (err) {
-		console.error("An error occurred shutting down the ws server:",err)
+	} catch (error) {
+		console.error('An error occurred shutting down the ws server:', error);
 		return false;
 	}
-
 }
-

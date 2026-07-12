@@ -12,7 +12,10 @@
     "halt-local-db": "cd web-socket-api/src && docker compose down mysql-db",
     "halt-video-chat-frontend": "docker compose --env-file .env -f web-server/compose.yaml down web-server-dev",
     "halt-signalling-api": "docker compose --env-file .env -f web-socket-api/src/compose.yaml down signalling-server-dev",
+    "build-video-chat-frontend": "cd web-server && npm run build",
     "test": "xo",
+    "lint": "xo --prettier",
+    "lint:fix": "xo --prettier --fix",
     "prepare": "husky install",
     "gcp-deploy-dev": "cd infra && pulumi up",
     "gcp-destroy-dev": "cd infra && pulumi destroy",
@@ -30,10 +33,11 @@
     "@playwright/test": "^1.61.1",
     "@types/node": "^26.1.0",
     "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.6.0",
     "prettier": "^3.8.3",
     "xo": "^2.0.2"
   },
   "lint-staged": {
-    "*.{js,css}": "xo --prettier"
+    "*.{ts,js,css}": "xo --prettier --fix"
   }
 }

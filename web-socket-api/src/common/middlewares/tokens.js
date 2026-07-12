@@ -1,11 +1,10 @@
-const jwt=require('jsonwebtoken');
-const crypto=require('crypto');
-const {RefreshToken}=require('../models');
+import crypto from 'node:crypto';
+import process from 'node:process';
+import jwt from 'jsonwebtoken';
+import {RefreshToken} from '../models/index.js';
 
-
-const ACCESS_TTL='15m';
-const REFRESH_TTL_SEC=60*60*24*7; // 7 days
-
+const ACCESS_TTL = '15m';
+const REFRESH_TTL_SEC = 60 * 60 * 24 * 7; // 7 days
 
 function hashToken(token) {
 	return crypto.createHash('sha256').update(token).digest('hex');
@@ -16,60 +15,69 @@ function createJti() {
 }
 
 function signAccessToken(user) {
-	const payload={username: user.username,email: user.email};
-	return jwt.sign(payload,process.env.JWT_SECRET,{expiresIn: ACCESS_TTL});
+	const payload = {username: user.username, email: user.email};
+	return jwt.sign(payload, process.env.JWT_SECRET, {expiresIn: ACCESS_TTL});
 }
 
-function signRefreshToken(user,jti) {
-	const payload={email: user.email,jti};
-	const token=jwt.sign(payload,process.env.REFRESH_TOKEN_SECRET,{expiresIn: REFRESH_TTL_SEC});
+function signRefreshToken(user, jti) {
+	const payload = {email: user.email, jti};
+	const token = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
+		expiresIn: REFRESH_TTL_SEC,
+	});
 	return token;
 }
 
-async function persistRefreshToken({user,refreshToken,jti,ip,userAgent}) {
-	const tokenHash=hashToken(refreshToken);
-	const expiresAt=new Date(Date.now()+REFRESH_TTL_SEC*1000);
-	await RefreshToken.create({userEmail: user.email,tokenHash,jti,expiresAt,ip,userAgent});
+async function persistRefreshToken({user, refreshToken, jti, ip, userAgent}) {
+	const tokenHash = hashToken(refreshToken);
+	const expiresAt = new Date(Date.now() + REFRESH_TTL_SEC * 1000);
+	await RefreshToken.create({
+		userEmail: user.email,
+		tokenHash,
+		jti,
+		expiresAt,
+		ip,
+		userAgent,
+	});
 }
 
-function setRefreshCookie(res,refreshToken) {
-	const isProd=process.env.NODE_ENV==='production';
-	res.cookie('refresh_token',refreshToken,{
+function setRefreshCookie(response, refreshToken) {
+	const isProd = process.env.NODE_ENV === 'production';
+	response.cookie('refresh_token', refreshToken, {
 		httpOnly: true,
 		secure: isProd,
 		sameSite: 'strict',
 		path: '/refresh',
-		maxAge: REFRESH_TTL_SEC*1000
+		maxAge: REFRESH_TTL_SEC * 1000,
 	});
 }
 
-async function rotateRefreshToken(oldDoc,user,req,res) {
-	// revoke old
-	oldDoc.revokedAt=new Date();
-	const newJti=createJti();
-	oldDoc.replacedBy=newJti;
+async function rotateRefreshToken(oldDoc, user, request, response) {
+	// Revoke old
+	oldDoc.revokedAt = new Date();
+	const newJti = createJti();
+	oldDoc.replacedBy = newJti;
 	await oldDoc.save();
 
-	// issue new
-	const newAccess=signAccessToken(user);
-	const newRefresh=signRefreshToken(user,newJti);
+	// Issue new
+	const newAccess = signAccessToken(user);
+	const newRefresh = signRefreshToken(user, newJti);
 	await persistRefreshToken({
 		user,
 		refreshToken: newRefresh,
 		jti: newJti,
-		ip: req.ip,
-		userAgent: req.headers['user-agent']||''
+		ip: request.ip,
+		userAgent: request.headers['user-agent'] || '',
 	});
-	setRefreshCookie(res,newRefresh);
+	setRefreshCookie(response, newRefresh);
 	return {accessToken: newAccess};
 }
 
-module.exports={
+export {
 	hashToken,
 	createJti,
 	signAccessToken,
 	signRefreshToken,
 	persistRefreshToken,
 	setRefreshCookie,
-	rotateRefreshToken
+	rotateRefreshToken,
 };
