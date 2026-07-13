@@ -13,7 +13,7 @@
     "halt-video-chat-frontend": "docker compose --env-file .env -f web-server/compose.yaml down web-server-dev",
     "halt-signalling-api": "docker compose --env-file .env -f web-socket-api/src/compose.yaml down signalling-server-dev",
     "build-video-chat-frontend": "cd web-server && npm run build",
-    "test-signalling-api-it": "cd web-socket-api/src && npm run test:it",
+    "test:it": "cd web-socket-api/src && npm run test:it",
     "test": "xo",
     "lint": "xo --prettier",
     "lint:fix": "xo --prettier --fix",
