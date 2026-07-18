@@ -4,7 +4,7 @@ AGENTS.md
 CLAUDE.md
 components.json
 compose.yaml
-Dockerfile
+Dockerfile.prod
 README.md
 .astro
 .vscode
