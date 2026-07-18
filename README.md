@@ -109,12 +109,12 @@ video-chat-application/
 │           │   └── global.css   # Tailwind v4 + shadcn CSS variable theme
 │           └── middleware.ts    # CSP header (nonce-based, skipped in dev mode)
 ├── infra/                       # Pulumi (TypeScript) IaC — provisions GCP resources (Cloud Run service, Cloud SQL instance, Secret Manager secrets) for production deployments
-├── scripts/                     # OS-specific scripts backing root npm run commands (setup, nuke, run-*)
+├── scripts/                     # OS-specific scripts backing root npm run commands (setup, nuke, dev, halt-dev)
 │   ├── dispatch.mjs             # Detects the host OS and runs the matching .ps1/.sh script
 │   ├── setup.sh / setup.ps1
 │   ├── nuke.sh / nuke.ps1
-│   ├── run-video-chat-frontend.sh / .ps1
-│   └── run-signalling-api.sh / .ps1
+│   ├── dev.sh / dev.ps1
+│   └── halt-dev.sh / halt-dev.ps1
 ├── e2e/                         # End-to-end tests (Playwright)
 ├── .github/workflows/           # CI/CD workflows
 ├── .husky/                      # Git hooks
@@ -152,7 +152,7 @@ git clone https://github.com/cyprste2717218/p2p-video-chat-web-app
 npm run setup
 ```
 
-`npm run setup` auto-detects your OS (via `scripts/dispatch.mjs`) and runs `scripts/setup.ps1` on Windows or `scripts/setup.sh` everywhere else — no need to pick a variant yourself.
+`npm run setup` auto-detects your OS (via `scripts/dispatch.mjs`) and runs `scripts/setup.ps1` on Windows or `scripts/setup.sh` everywhere else - no need to pick a variant yourself.
 
 Note: the `npm run setup` command above isn't technically necessary for developing using the docker containers as they will setup their own dependencies from scratch. However, it will help you avoid a lot of in-editor errors related to typing and package imports that could be inconvenient!
 
