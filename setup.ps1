@@ -4,9 +4,9 @@ Write-Host "Installing root npm dependencies..."
 npm install
 
 Write-Host "Installing web-server dependencies..."
-Set-Location web-server
+Set-Location web-server/src
 npm install
-Set-Location ..
+Set-Location ../..
 
 Write-Host "Installing signalling API dependencies..."
 Set-Location web-socket-api/src
@@ -22,7 +22,7 @@ Write-Host "Building signalling API dev image..."
 docker build -f ./web-socket-api/src/Dockerfile.dev -t signalling-server-dev:1.0.0 ./web-socket-api/src
 
 Write-Host "Building frontend dev image..."
-docker build -f ./web-server/Dockerfile.dev -t web-server-dev:1.0.0 ./web-server
+docker build -f ./web-server/src/Dockerfile.dev -t web-server-dev:1.0.0 ./web-server/src
 
 Write-Host "Ready for dev!"
 
