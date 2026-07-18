@@ -32,7 +32,7 @@ services:
   signalling-server-prod:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     image: europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-backend:1.0.0
     ports:
       - 3000:3000

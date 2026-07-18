@@ -2,7 +2,7 @@ services:
   web-server-prod:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     image: europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-frontend:1.0.0
     ports:
       - "8080:8080"
