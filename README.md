@@ -41,6 +41,7 @@ Voneo is a peer-to-peer video chat application built with an Astro/React fronten
   - [WebSocket Signalling](#websocket-signalling-per-call)
   - [API Examples](#api-examples)
   - [Environment Variables](#environment-variables)
+- [Database Structure & Data Models](#database-structure--data-models)
 - [Frontend (Astro + React)](#frontend-astro--react)
 - [Gotchas & Experimentation](#gotchas--experimentation)
 
@@ -404,6 +405,63 @@ Bear in mind that running this way restricts your ability to test with anything 
 - **WebSocket server port:** each call's WebSocket server is bound to a randomly assigned port (via `setRandomPort()`) instead of the hardcoded dev port `3000` when `NODE_ENV` is `dev`
 - **WebSocket URL construction:** `constructURI` returns `wss://<NGROK_HOST>:<port>` using the server's actual assigned port, instead of the dev-mode `/wss/:callID` (or `/ws/:callID` when `LOCAL=true`) path (`web-socket-api/src/call/utils/misc.js`).
 - **WebSocket origin verification:** `verifyClient` rejects any WebSocket upgrade whose `Origin` header isn't in a hardcoded allowlist (currently a placeholder `https://app.example.com` that still needs updating for the real deployed domain) (`web-socket-api/src/call/utils/ws-server.js`).
+
+---
+
+## Database Structure & Data Models
+
+Persistent data (users, calls, and each user's participation record on a call) is stored in MySQL via Sequelize models defined in `web-socket-api/src/common/models/`. Note that **live signalling state** (the in-memory `Map` of connected WebSocket clients in `session-store.js`) is separate from this and is not persisted - see [Known incomplete areas](#gotchas--experimentation).
+
+### Entity-relationship diagram
+
+```mermaid
+erDiagram
+    USER ||--o{ CALL_PARTICIPANTS : "joins via"
+    CALL ||--o{ CALL_PARTICIPANTS : "has"
+    USER ||--o| REFRESH_TOKEN : "has"
+
+    USER {
+        string email PK
+        string username
+        string password
+    }
+
+    CALL {
+        uuid callID PK
+        string callURL
+        int totalDurationSecs
+        boolean activeCall
+        datetime startedAt
+        datetime finishedAt
+    }
+
+    CALL_PARTICIPANTS {
+        string UserEmail FK
+        uuid CallCallID FK
+        string status "pending or active"
+    }
+
+    REFRESH_TOKEN {
+        string tokenHash PK
+        string jti
+        datetime expiresAt
+        datetime revokedAt
+        string replacedBy
+        datetime createdAt
+        string ip
+        string userAgent
+        string userEmail FK
+    }
+```
+
+### Model relationships
+
+- `User` and `Call` share a **many-to-many** relationship through the `CallParticipants` join table, which auto-joins from each side's primary key: `UserEmail` (→ `User.email`) and `CallCallID` (→ `Call.callID`) - both are queried directly elsewhere in the codebase (e.g. `web-socket-api/src/call/controller.js`, `call/utils/misc.js`). The table also carries its own `status` column (`pending` or `active`) tracking each user's participation state on a given call.
+- `User` and `RefreshToken` share a **one-to-one** relationship; the foreign key lives on `RefreshToken`.
+- `User.email` is the primary key - there is no separate numeric user ID.
+- All models use `{timestamps: false}`, so Sequelize's automatic `createdAt`/`updatedAt` columns are disabled; models track their own date fields explicitly where needed (e.g. `Call.startedAt`/`finishedAt`, `RefreshToken.createdAt`/`expiresAt`).
+
+Source of truth for these models: `web-socket-api/src/common/models/user.js`, `call.js`, `call-participants.js`, `refresh-token.js`, and `index.js` (association definitions and dev-only seed data).
 
 ---
 
