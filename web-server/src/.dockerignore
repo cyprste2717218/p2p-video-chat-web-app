@@ -1,0 +1,9 @@
+.dockerignore
+components.json
+compose.yaml
+Dockerfile.prod
+.astro
+dist/
+node_modules/
+.tmp/
+.cache/
