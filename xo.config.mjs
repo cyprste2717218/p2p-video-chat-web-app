@@ -8,7 +8,7 @@ const xoConfig = [
 		ignores: ['**/*.astro'],
 	},
 	{
-		files: ['web-server/public/token-worker.js'],
+		files: ['web-server/src/public/token-worker.js'],
 		languageOptions: {
 			globals: globals.worker,
 		},
