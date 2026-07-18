@@ -1,3 +1,5 @@
+name: voneo-web-server
+
 services:
   web-server-prod:
     build:

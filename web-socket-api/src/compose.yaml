@@ -1,3 +1,5 @@
+name: voneo-signalling-api
+
 services:
 
   signalling-server-dev:
