@@ -1,5 +1,7 @@
 $ErrorActionPreference = "Stop"
 
+Set-Location (Join-Path $PSScriptRoot "..")
+
 Write-Host "Installing root npm dependencies..."
 npm install
 

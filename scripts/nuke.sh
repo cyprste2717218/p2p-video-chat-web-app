@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+cd "$(dirname "$0")/.."
+
 echo ">>> Removing node_modules..."
 rm -rf node_modules web-server/src/node_modules web-socket-api/src/node_modules infra/node_modules
 

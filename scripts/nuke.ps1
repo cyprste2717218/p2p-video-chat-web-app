@@ -1,3 +1,5 @@
+Set-Location (Join-Path $PSScriptRoot "..")
+
 Write-Host ">>> Removing node_modules..."
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue node_modules
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue web-server/src/node_modules
