@@ -1,4 +1,8 @@
 .dockerignore
+.gitignore
+AGENTS.md
+CLAUDE.md
+README.md
 components.json
 compose.yaml
 Dockerfile.prod
