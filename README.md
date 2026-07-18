@@ -141,10 +141,10 @@ video-chat-application/
 
 ### Prerequisites
 
-- [Docker](https://docs.docker.com/desktop/setup/install/windows-install/) (v28+)
+- [Docker](https://docs.docker.com/desktop/setup/install/) (v28+)
 - [Node.js](https://nodejs.org/) (LTS recommended)
-- [Ngrok](https://ngrok.com/download/windows) 
-- [Git](https://git-scm.com/install/windows)
+- [Ngrok](https://ngrok.com/download/) 
+- [Git](https://git-scm.com/install/)
 - A machine with camera/microphone access for testing WebRTC
 
 ### 1. Clone repo, install npm deps & build dev docker images
@@ -505,6 +505,6 @@ This image is used in GCP deployments - it is pushed to Artifact Registry and re
 
 ## Gotchas & Experimentation
 
-1. **Incomplete endpoints** — `DELETE /call/:callID/leave` is a stub. Do not expect leave-call to work at current
+1. **Incomplete endpoints** — `DELETE /call/:callID/leave` is partially implemented but stil needs some work doing.
 2. **In-memory calls** — Restarting the API clears all active calls and WebSocket servers. No persistence of web socket calls to persistent storage at current.
 
