@@ -37,8 +37,12 @@ Before a git commit is created, staged and pushed to the remote branch, it is es
 ### - Keep the change small and focused:
 
 The change should be small and focused, scoped to one specific type of change (refer to [Types of Git Commit](#types-of-git-commit) below to classify the change).
+The commit message should clearly identify what the changes were in a good level of technical detail, covering what changed and where.
+
 The commit message itself should generally be at most 30 characters in total, however if this length restricts a clear explanation of the changes these should be covered in the extended commit message. 
-Commit messages should always start with one prefix from the [Types of Git Commit](#types-of-git-commit) section. However, in the case the change doesn't neatly fall into any of these categories opt to classify it as a `chore` type.
+
+Commit messages should always start with one prefix from the [Types of Git Commit](#types-of-git-commit) section.
+However, in the case the change doesn't neatly fall into any of these categories opt to classify it as a `chore` type.
 
 #### Types of Git Commit
 
@@ -52,7 +56,7 @@ For most changes which help implement code as part of an overarching feature, wh
 
 For any changes which implement a bug fix, which could have been identified during implementation of a feature or pulled from a GitHub issue.
 
-- `doc:`
+- `docs:`
 
 For any project documentation changes, i.e. any `CLAUDE.md` or `README.md` files contained within the source code of this project.
 
@@ -63,12 +67,13 @@ Any changes to or newly created test files or related config, i.e. relating to `
 
 ### - Do not make too many changes
 
-Does not modify more than 5 files and make more than 200 lines of code changes at once
+Does not modify more than 5 files and make more than 200 lines of code changes at once.
+If the changeset exceeds this, separate out the changes into numerous commits to be sequentially pushed to the remote branch per the [guidance in the previous requirement](#--keep-the-change-small-and-focused)
 
 ### - Pass the required git hooks
 
 Ensures the git hooks in the `pre-commit` and `pre-push` husky scripts succesfully pass before a git commit is pushed.
-However, on `feat/` branches in the case that the needed changes to make this hook scripts pass would exceed the change size requirement add `WIP:` after the [git commit type prefix]().
+However, on `feat/` branches in the case that the needed changes to make this hook scripts pass would exceed the change size requirement, add `WIP:` after the [git commit type prefix]().
 e.g. `chore(WIP):`
 
 This indicates that a developer should expect errors if they try to use the system at this commit hash.
