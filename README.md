@@ -82,6 +82,10 @@ video-chat-application/
 │   ├── tests/
 │   │   └── components/          # Component tests, i.e. validating interactive components respond to user
 │   └── src/
+│       ├── .gitignore           # Ignores build output, generated types, deps
+│       ├── README.md            # Frontend-specific overview
+│       ├── CLAUDE.md            # Astro dev-server guidance for Claude Code
+│       ├── AGENTS.md            # Astro dev-server guidance for other coding agents
 │       ├── Dockerfile.prod      # Production Docker image — serving the built Astro SSR app
 │       ├── Dockerfile.dev       # Astro SSR Dev image — mounts source and watches for changes
 │       ├── compose.yaml         # Docker Compose services (prod + dev)

@@ -117,7 +117,7 @@ Astro (SSR via `@astrojs/node`) with React islands, Tailwind v4, shadcn/ui. Path
 - `public/token-worker.js` — plain JS Web Worker owning `TokenService`, which holds the JWT access token in a private field and performs all `fetch` calls to the Express API, so the token never touches the main thread.
 - `src/middleware.ts` — nonce-based CSP header, applied in production only (skipped in dev to avoid blocking Vite HMR/dev toolbar).
 
-See `web-server/CLAUDE.md` for Astro-specific dev-server guidance (background mode via `astro dev --background`).
+See `web-server/src/CLAUDE.md` for Astro-specific dev-server guidance (background mode via `astro dev --background`).
 
 ### Infra (`infra/`)
 
