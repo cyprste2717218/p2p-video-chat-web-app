@@ -111,11 +111,7 @@ video-chat-application/
 ├── .prettierrc                  # Prettier configuration
 ├── package.json                 # Root scripts to run both servers
 ├── playwright.config.ts         # Playwright configuration
-├── ngrok.example.yml            # Ngrok tunnel config
-├── setup.ps1                    # Windows setup script (installs deps, builds dev images)
-├── setup.sh                     # Unix/macOS setup script (installs deps, builds dev images)
-├── nuke.ps1                     # Windows teardown script (removes containers, images, volumes, deps and rebuilds dev images and reinstalls deps)
-└── nuke.sh                      # Unix/macOS teardown script (removes containers, images, volumes, deps and rebuild dev images and reinstalls deps)
+└── ngrok.example.yml            # Ngrok tunnel config
 ```
 
 
