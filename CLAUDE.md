@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-Voneo is a peer-to-peer video chat app: an Astro/React frontend (`web-server/`) talks to an Express.js signalling API (`web-socket-api/`), which spins up a dedicated in-memory WebSocket server per call for session coordination (participants, chat, SDP offer relay). WebRTC handles actual media peer-to-peer once signalling completes (`web-server/src/lib/rtcUtils.ts`).
+Voneo is a peer-to-peer video chat app: an Astro/React frontend (`web-server/`) talks to an Express.js signalling API (`web-socket-api/`), which spins up a dedicated in-memory WebSocket server per call for session coordination (participants, chat, SDP offer relay). WebRTC handles actual media peer-to-peer once signalling completes (`web-server/src/src/lib/rtc-utils.ts`).
 
 Everything runs via Docker Compose in dev, tunnelled through ngrok so the app is reachable from devices other than the host (needed for testing real WebRTC peers). A `LOCAL=true` env mode exists to bypass ngrok and run against `localhost` only — see @README.md for the tradeoffs (single-device testing only, and `NGROK_HOST` must be unset when `LOCAL=true`).
 
@@ -24,7 +24,7 @@ All commands below are run from the repo root unless noted.
 - `npm run test:it` — alias to run the integration tests for the API (and eventually the websocket infra)
 Per-workspace:
 - `web-socket-api/src`: `npm run dev` runs the API directly with `node --env-file=.env app.js` (outside Docker). No test runner is currently wired up (`npm test` is a placeholder); `tests/it` and `tests/unit` exist but are empty scaffolding.
-- `web-server`: `npm run dev` runs Astro directly (`astro dev`); `npm run build` / `npm run preview` for production builds. `tests/components` exists but is empty scaffolding. Vitest is a devDependency but no tests are written yet.
+- `web-server/src`: `npm run dev` runs Astro directly (`astro dev`); `npm run build` / `npm run preview` for production builds. `web-server/tests/components` exists but is empty scaffolding. Vitest is a devDependency but no tests are written yet.
 
 A root `.env` (copied from `.env.example`) is required and is shared by both the frontend and backend containers — see the @README.md Environment Variables section for the full variable list (`JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `DB_*`, `NGROK_HOST`, `LOCAL`, `NODE_ENV`).
 
@@ -105,9 +105,9 @@ Several behaviors branch on `NODE_ENV`/`LOCAL` — check these before assuming b
 - CORS: dev restricts `Origin` based on `LOCAL`/`NGROK_HOST`; production currently allows any origin via a placeholder `ALLOWED_PROD_ORIGINS` list still to be filled in.
 - Refresh token cookie: `Secure` only set in production.
 
-### Frontend (`web-server`)
+### Frontend (`web-server/src`)
 
-Astro (SSR via `@astrojs/node`) with React islands, Tailwind v4, shadcn/ui.
+Astro (SSR via `@astrojs/node`) with React islands, Tailwind v4, shadcn/ui. Paths below are relative to `web-server/src/` (the Astro source tree itself lives one level further down, at `web-server/src/src/`).
 
 - `src/pages/index.astro` — shell page, renders `<App client:load />`.
 - `src/components/App.tsx` — root, switches between `AuthScreen` (logged out) and `CallScreen` (logged in).

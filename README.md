@@ -79,30 +79,31 @@ video-chat-application/
 │       ├── it/                  # Integration tests
 │       └── unit/                # Unit tests (backend utilities, i.e. token generators, helper utils)
 ├── web-server/                  # Astro.js frontend (SSR, React + Tailwind + shadcn/ui)
-│   ├── Dockerfile.prod          # Production Docker image — serving the built Astro SSR app
-│   ├── Dockerfile.dev           # Astro SSR Dev image — mounts source and watches for changes
-│   ├── compose.yaml             # Docker Compose services (prod + dev)
-│   ├── public/
-│   │   └── token-worker.js      # Web Worker: token storage + all API fetch calls
 │   ├── tests/
 │   │   └── components/          # Component tests, i.e. validating interactive components respond to user
 │   └── src/
-│       ├── pages/
-│       │   └── index.astro      # Shell page — imports global CSS, renders <App client:load />
-│       ├── components/
-│       │   ├── App.tsx          # Root — switches between AuthScreen / CallScreen
-│       │   ├── AuthScreen.tsx   # Login + register tabs (shown when logged out)
-│       │   ├── CallScreen.tsx   # Create/join call controls, video grid, chat sidebar
-│       │   ├── VideoGrid.tsx    # Local + remote video tiles
-│       │   ├── ChatPanel.tsx    # Chat message list + send input
-│       │   └── ui/              # shadcn/ui primitives
-│       ├── lib/
-│       │   ├── rtcUtils.ts      # WebRTC helpers (media, peer connections, WS messaging)
-│       │   ├── useTokenWorker.ts # Hook — module-level singleton Worker
-│       │   └── utils.ts         # shadcn cn() class utility
-│       ├── styles/
-│       │   └── global.css       # Tailwind v4 + shadcn CSS variable theme
-│       └── middleware.ts        # CSP header (nonce-based, skipped in dev mode)
+│       ├── Dockerfile.prod      # Production Docker image — serving the built Astro SSR app
+│       ├── Dockerfile.dev       # Astro SSR Dev image — mounts source and watches for changes
+│       ├── compose.yaml         # Docker Compose services (prod + dev)
+│       ├── public/
+│       │   └── token-worker.js  # Web Worker: token storage + all API fetch calls
+│       └── src/
+│           ├── pages/
+│           │   └── index.astro  # Shell page — imports global CSS, renders <App client:load />
+│           ├── components/
+│           │   ├── app.tsx      # Root — switches between AuthScreen / CallScreen
+│           │   ├── auth-screen.tsx # Login + register tabs (shown when logged out)
+│           │   ├── call-screen.tsx # Create/join call controls, video grid, chat sidebar
+│           │   ├── video-grid.tsx  # Local + remote video tiles
+│           │   ├── chat-panel.tsx  # Chat message list + send input
+│           │   └── ui/          # shadcn/ui primitives
+│           ├── lib/
+│           │   ├── rtc-utils.ts # WebRTC helpers (media, peer connections, WS messaging)
+│           │   ├── use-token-worker.ts # Hook — module-level singleton Worker
+│           │   └── utils.ts     # shadcn cn() class utility
+│           ├── styles/
+│           │   └── global.css   # Tailwind v4 + shadcn CSS variable theme
+│           └── middleware.ts    # CSP header (nonce-based, skipped in dev mode)
 ├── infra/                       # Pulumi (TypeScript) IaC — provisions GCP resources (Cloud Run service, Cloud SQL instance, Secret Manager secrets) for production deployments
 ├── e2e/                         # End-to-end tests (Playwright)
 ├── .github/workflows/           # CI/CD workflows
@@ -414,7 +415,7 @@ Bear in mind that running this way restricts your ability to test with anything 
 
 ## Frontend (Astro + React)
 
-**Framework:** Astro (SSR via `@astrojs/node`), accessed via Ngrok tunnel (e.g. `https://horizon-velvet-symphony.ngrok-free.dev/`) request forwarding to docker container spun up from image `web-server-dev:1.0.0`.
+**Framework:** Astro (SSR via `@astrojs/node`), accessed via Ngrok tunnel (e.g. `https://horizon-velvet-symphony.ngrok-free.dev/`) request forwarding to docker container spun up from image `web-server-dev:1.0.0`. Paths below are relative to `web-server/src/` (the Astro source tree itself lives one level further down, at `web-server/src/src/`).
 
 **Entry:** `src/pages/index.astro` imports global CSS and renders `<App client:load />`.
 
@@ -432,7 +433,7 @@ Sets a nonce-based `Content-Security-Policy` header on every response in product
 
 ### Dockerfiles
 
-There are two dockerfiles for the frontend in `web-server/`:
+There are two dockerfiles for the frontend in `web-server/src/`:
 
 - `Dockerfile.dev`:
 
