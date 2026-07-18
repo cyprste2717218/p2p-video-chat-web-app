@@ -63,7 +63,7 @@ video-chat-application/
 │   ├── src/
 │   │   ├── app.js               # API entry point (port 3000 by default)
 │   │   ├── openapi.yaml         # API schema reference (may drift from implementation)
-│   │   ├── Dockerfile           # Production Docker image for the signalling API
+│   │   ├── Dockerfile.prod      # Production Docker image for the signalling API
 │   │   ├── Dockerfile.dev       # Signalling server Dev image — mounts source and watches for changes
 │   │   ├── compose.yaml         # Docker Compose services (dev)
 │   │   ├── authorization/       # Signup, login, logout, reset token provision routes
@@ -79,7 +79,7 @@ video-chat-application/
 │       ├── it/                  # Integration tests
 │       └── unit/                # Unit tests (backend utilities, i.e. token generators, helper utils)
 ├── web-server/                  # Astro.js frontend (SSR, React + Tailwind + shadcn/ui)
-│   ├── Dockerfile               # Production Docker image — serving the built Astro SSR app
+│   ├── Dockerfile.prod          # Production Docker image — serving the built Astro SSR app
 │   ├── Dockerfile.dev           # Astro SSR Dev image — mounts source and watches for changes
 │   ├── compose.yaml             # Docker Compose services (prod + dev)
 │   ├── public/
@@ -438,7 +438,7 @@ There are two dockerfiles for the frontend in `web-server/`:
 
 Created for local development and syncs local file changes into the container automatically.
 
-- `Dockerfile`:
+- `Dockerfile.prod`:
 
 Produces a production-optimised image (`europe-west2-docker.pkg.dev/signalling-api/voneo/voneo-frontend:1.0.0`).
 
