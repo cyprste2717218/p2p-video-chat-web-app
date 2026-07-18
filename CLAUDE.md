@@ -21,6 +21,7 @@ All commands below are run from the repo root unless noted.
 - `npx playwright test` — run e2e tests in `e2e/` (Playwright config at `playwright.config.ts`).
 - `npm run lint` —  Runs XO linting with prettier config passed in
 - `npm run lint:fix` — Applies XO linting and prettier formatting fixes where possible, identifies any errors/warnings that couldn't be implemented
+- `npm run test:it` — alias to run the integration tests for the API (and eventually the websocket infra)
 Per-workspace:
 - `web-socket-api/src`: `npm run dev` runs the API directly with `node --env-file=.env app.js` (outside Docker). No test runner is currently wired up (`npm test` is a placeholder); `tests/it` and `tests/unit` exist but are empty scaffolding.
 - `web-server`: `npm run dev` runs Astro directly (`astro dev`); `npm run build` / `npm run preview` for production builds. `tests/components` exists but is empty scaffolding. Vitest is a devDependency but no tests are written yet.
@@ -29,9 +30,19 @@ A root `.env` (copied from `.env.example`) is required and is shared by both the
 
 Pre-commit hook (Husky) runs `lint-staged` (`xo --prettier` on staged `.js`/`.css`) and verifies the Astro frontend builds.
 
-## Git conventions
+## Git Conventions
 
-Each commit message should be at most 30 characters in total and always start with one of the following prefixes depending on the changes made:
+Before a git commit is created, staged and pushed to the remote branch, it is essential that the changeset meets the following requirements with occasional exceptions (detailed below):
+
+### - Keep the change small and focused:
+
+The change should be small and focused, scoped to one specific type of change (refer to [Types of Git Commit](#types-of-git-commit) below to classify the change).
+The commit message itself should generally be at most 30 characters in total, however if this length restricts a clear explanation of the changes these should be covered in the extended commit message. 
+Commit messages should always start with one prefix from the [Types of Git Commit](#types-of-git-commit) section. However, in the case the change doesn't neatly fall into any of these categories opt to classify it as a `chore` type.
+
+#### Types of Git Commit
+
+The following types of git commits exist:
 
 - `chore:`
 
@@ -41,9 +52,26 @@ For most changes which help implement code as part of an overarching feature, wh
 
 For any changes which implement a bug fix, which could have been identified during implementation of a feature or pulled from a GitHub issue.
 
-For either type of commit, the diff should be small and focused as far as this is possible and ideally not change more than 5 files at the same time or exceed a total of 200 changed lines of code.
-Each commit should pass the git hooks in the `pre-commit` and `pre-push` checks, however if in order to meet this diff standard these checks fail then the commit pre-fix must be followed by `(WIP):` before the colon, e.g. `chore(WIP):`
+- `doc:`
 
+For any project documentation changes, i.e. any `CLAUDE.md` or `README.md` files contained within the source code of this project.
+
+- `test:`
+
+Any changes to or newly created test files or related config, i.e. relating to `vitest`, `playwright` or `supertest` testing frameworks
+
+
+### - Do not make too many changes
+
+Does not modify more than 5 files and make more than 200 lines of code changes at once
+
+### - Pass the required git hooks
+
+Ensures the git hooks in the `pre-commit` and `pre-push` husky scripts succesfully pass before a git commit is pushed.
+However, on `feat/` branches in the case that the needed changes to make this hook scripts pass would exceed the change size requirement add `WIP:` after the [git commit type prefix]().
+e.g. `chore(WIP):`
+
+This indicates that a developer should expect errors if they try to use the system at this commit hash.
 
 ## Architecture
 
