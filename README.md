@@ -58,6 +58,9 @@ Typical flow:
 
 ## Project Structure
 
+<details>
+<summary>Expand file tree</summary>
+
 ```
 video-chat-application/
 ├── web-socket-api/              # Express.js signalling API + per-call WebSocket servers
@@ -126,6 +129,7 @@ video-chat-application/
 └── ngrok.example.yml            # Ngrok tunnel config
 ```
 
+</details>
 
 | Component                             | Role                                                                                       |
 | ------------------------------------- | ------------------------------------------------------------------------------------------ |
