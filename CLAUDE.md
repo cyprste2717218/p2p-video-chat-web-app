@@ -12,11 +12,11 @@ Everything runs via Docker Compose in dev, tunnelled through ngrok so the app is
 
 All commands below are run from the repo root unless noted.
 
-- `npm run setup:win` / `npm run setup:unix` — install npm deps across the repo and build dev Docker images. Not strictly required (containers self-provision) but avoids editor type/import errors.
+- `npm run setup` — install npm deps across the repo and build dev Docker images. Not strictly required (containers self-provision) but avoids editor type/import errors.
 - `npm run dev` — start both dev containers (frontend + signalling API + MySQL) via `docker compose watch`.
 - `npm run halt-dev` — stop all dev containers.
 - `npm run tunnel` — start the ngrok tunnel (requires `ngrok.yml` with an authtoken, copied from `ngrok.example.yml`).
-- `npm run nuke:win` / `npm run nuke:unix` — full teardown: removes containers/images/volumes/deps, then rebuilds/reinstalls. Destructive — only run when setup is broken.
+- `npm run nuke` — full teardown: removes containers/images/volumes/deps, then rebuilds/reinstalls. Destructive — only run when setup is broken.
 - `npm test` (root) — runs `xo` (lint) across the repo; this is the only root-level test/lint command.
 - `npx playwright test` — run e2e tests in `e2e/` (Playwright config at `playwright.config.ts`).
 - `npm run lint` —  Runs XO linting with prettier config passed in
