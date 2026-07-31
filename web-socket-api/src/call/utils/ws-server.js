@@ -26,10 +26,10 @@ export function handleUpgrade(request, socket, head) {
 
 	if (!match) return socket.destroy();
 	const callID = match[1];
-	const entry = wss.find((s) => callID in s);
+	const entry = wss.get(callID);
 	if (!entry) return socket.destroy();
-	entry[callID].server.handleUpgrade(request, socket, head, (ws) => {
-		entry[callID].server.emit('connection', ws, request);
+	entry.server.handleUpgrade(request, socket, head, (ws) => {
+		entry.server.emit('connection', ws, request);
 	});
 
 	console.log('connection upgrade finished');
@@ -131,10 +131,8 @@ export async function createWebSocketsServer() {
 					maxPayload: 64 * 1024,
 				};
 
-		wss.push({
-			[callID]: {
-				server: new WebSocketServer(wsServerOptions),
-			},
+		wss.set(callID, {
+			server: new WebSocketServer(wsServerOptions),
 		});
 
 		const activeWSS = await getRelevantWSS(callID);

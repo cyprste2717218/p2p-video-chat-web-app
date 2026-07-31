@@ -5,8 +5,7 @@ import {wss} from './session-store.js';
 export async function getRelevantWSS(callID) {
 	try {
 		console.log('trying to find wss for:', callID);
-		const foundWss = wss.find((wsServer) => callID in wsServer);
-		const activeWSS = foundWss ? foundWss[callID] : null;
+		const activeWSS = wss.get(callID) ?? null;
 
 		if (!activeWSS) {
 			throw new Error('No wss object found for callID');

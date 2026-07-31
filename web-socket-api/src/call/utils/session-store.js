@@ -1,1 +1,1 @@
-export const wss = [];
+export const wss = new Map();
